@@ -1,0 +1,85 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="row mb-4 align-items-center">
+    <div class="col-md-6">
+        <h2 class="mb-0">Dashboard</h2>
+    </div>
+    <div class="col-md-6 text-md-end mt-3 mt-md-0">
+        <h4 class="mb-0">Current Balance:
+            <span class="{{ 'positive' if current_balance >= 0 else 'negative' }}">
+                {{ "%.2f"|format(current_balance) }}h
+            </span>
+        </h4>
+    </div>
+</div>
+
+<div class="table-responsive">
+    <table class="table table-bordered table-hover align-middle text-center">
+        <thead class="table-dark">
+            <tr>
+                <th>Date</th>
+                <th>Type</th>
+                <th>Periods</th>
+                <th>Worked (h)</th>
+                <th>Expected (h)</th>
+                <th>Daily Delta</th>
+                <th>Acc. Balance</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for record in history %}
+            <tr class="{% if record.is_holiday or record.manual_holiday %}table-warning{% elif record.is_weekend %}table-light{% endif %}">
+                <td>
+                    <strong>{{ record.date.strftime('%Y-%m-%d') }}</strong><br>
+                    <small class="text-muted">{{ record.date.strftime('%a') }}</small>
+                </td>
+                <td>
+                    {% if record.is_holiday or record.manual_holiday %}
+                        <span class="badge bg-warning text-dark">Holiday</span>
+                    {% elif record.is_weekend %}
+                        <span class="badge bg-secondary">Weekend</span>
+                    {% else %}
+                        <span class="badge bg-success">Workday</span>
+                    {% endif %}
+                </td>
+                <td class="text-start">
+                    {% if record.periods %}
+                        {% for p in record.periods %}
+                            <div class="small">
+                                {{ p.entry_time.strftime('%H:%M') }} -
+                                {% if p.exit_time %}
+                                    {{ p.exit_time.strftime('%H:%M') }}
+                                {% else %}
+                                    (working)
+                                {% endif %}
+                            </div>
+                        {% endfor %}
+                    {% else %}
+                        <span class="text-muted small">No records</span>
+                    {% endif %}
+                </td>
+                <td>{{ "%.2f"|format(record.worked_hours) }}</td>
+                <td>{{ "%.2f"|format(record.expected_hours) }}</td>
+                <td class="{{ 'text-success fw-bold' if record.daily_delta > 0 else 'text-danger fw-bold' if record.daily_delta < 0 else '' }}">
+                    {{ "%+.2f"|format(record.daily_delta) }}
+                </td>
+                <td>
+                    {% if record.override is not none %}
+                        <span class="badge bg-info text-dark" title="Manual Override">
+                            {{ "%.2f"|format(record.balance) }}h *
+                        </span>
+                    {% else %}
+                        <strong>{{ "%.2f"|format(record.balance) }}h</strong>
+                    {% endif %}
+                </td>
+                <td>
+                    <a href="{{ url_for('main.day_edit', date_str=record.date) }}" class="btn btn-sm btn-primary">Edit</a>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

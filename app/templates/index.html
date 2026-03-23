@@ -18,14 +18,13 @@
     <table class="table table-bordered table-hover align-middle text-center">
         <thead class="table-dark">
             <tr>
-                <th>Date</th>
-                <th>Type</th>
-                <th>Periods</th>
-                <th>Worked (h)</th>
-                <th>Expected (h)</th>
-                <th>Daily Delta</th>
-                <th>Acc. Balance</th>
-                <th>Actions</th>
+                <th style="width: 10%;">Date</th>
+                <th style="width: 8%;">Type</th>
+                <th style="width: 50%;">Periods (Quick Edit)</th>
+                <th style="width: 8%;">Worked</th>
+                <th style="width: 8%;">Expected</th>
+                <th style="width: 8%;">Daily Delta</th>
+                <th style="width: 8%;">Acc. Bal.</th>
             </tr>
         </thead>
         <tbody>
@@ -33,7 +32,8 @@
             <tr class="{% if record.is_holiday or record.manual_holiday %}table-warning{% elif record.is_weekend %}table-light{% endif %}">
                 <td>
                     <strong>{{ record.date.strftime('%Y-%m-%d') }}</strong><br>
-                    <small class="text-muted">{{ record.date.strftime('%a') }}</small>
+                    <small class="text-muted">{{ record.date.strftime('%a') }}</small><br>
+                    <a href="{{ url_for('main.day_edit', date_str=record.date) }}" class="btn btn-sm btn-outline-primary mt-1" style="font-size: 0.70rem; padding: 0.15rem 0.4rem;">Advanced Edit</a>
                 </td>
                 <td>
                     {% if record.is_holiday or record.manual_holiday %}
@@ -44,22 +44,46 @@
                         <span class="badge bg-success">Workday</span>
                     {% endif %}
                 </td>
+
                 <td class="text-start">
-                    {% if record.periods %}
-                        {% for p in record.periods %}
-                            <div class="small">
-                                {{ p.entry_time.strftime('%H:%M') }} -
-                                {% if p.exit_time %}
-                                    {{ p.exit_time.strftime('%H:%M') }}
-                                {% else %}
-                                    (working)
-                                {% endif %}
-                            </div>
-                        {% endfor %}
+                    {% if record.periods|length > 2 %}
+                        <div class="d-flex flex-column gap-1">
+                            {% for p in record.periods %}
+                                <div class="small fw-bold">
+                                    Period {{ loop.index }}: {{ p.entry_time.strftime('%H:%M') }} - {{ p.exit_time.strftime('%H:%M') if p.exit_time else '(working)' }}
+                                </div>
+                            {% endfor %}
+                            <small class="text-muted">More than 2 periods. Use <strong>Advanced Edit</strong> to modify.</small>
+                        </div>
                     {% else %}
-                        <span class="text-muted small">No records</span>
+                        <!-- Inline Quick Form -->
+                        <form action="{{ url_for('main.day_quick_update', date_str=record.date) }}" method="POST" class="d-flex align-items-center justify-content-center flex-wrap gap-2 m-0 p-0">
+                            {% set p1 = record.periods[0] if record.periods|length > 0 else None %}
+                            {% set p2 = record.periods[1] if record.periods|length > 1 else None %}
+
+                            <div class="input-group input-group-sm" style="max-width: 180px;">
+                                <span class="input-group-text bg-light border-secondary">In</span>
+                                <input type="time" name="entry_time[]" class="form-control border-secondary text-center" value="{{ p1.entry_time.strftime('%H:%M') if p1 else '' }}">
+                            </div>
+                            <div class="input-group input-group-sm" style="max-width: 180px;">
+                                <span class="input-group-text bg-light border-secondary">Out</span>
+                                <input type="time" name="exit_time[]" class="form-control border-secondary text-center" value="{{ p1.exit_time.strftime('%H:%M') if p1 and p1.exit_time else '' }}">
+                            </div>
+
+                            <div class="input-group input-group-sm" style="max-width: 180px;">
+                                <span class="input-group-text bg-light border-secondary">In</span>
+                                <input type="time" name="entry_time[]" class="form-control border-secondary text-center" value="{{ p2.entry_time.strftime('%H:%M') if p2 else '' }}">
+                            </div>
+                            <div class="input-group input-group-sm" style="max-width: 180px;">
+                                <span class="input-group-text bg-light border-secondary">Out</span>
+                                <input type="time" name="exit_time[]" class="form-control border-secondary text-center" value="{{ p2.exit_time.strftime('%H:%M') if p2 and p2.exit_time else '' }}">
+                            </div>
+
+                            <button type="submit" class="btn btn-sm btn-success">Save ✓</button>
+                        </form>
                     {% endif %}
                 </td>
+
                 <td>{{ "%.2f"|format(record.worked_hours) }}</td>
                 <td>{{ "%.2f"|format(record.expected_hours) }}</td>
                 <td class="{{ 'text-success fw-bold' if record.daily_delta > 0 else 'text-danger fw-bold' if record.daily_delta < 0 else '' }}">
@@ -73,9 +97,6 @@
                     {% else %}
                         <strong>{{ "%.2f"|format(record.balance) }}h</strong>
                     {% endif %}
-                </td>
-                <td>
-                    <a href="{{ url_for('main.day_edit', date_str=record.date) }}" class="btn btn-sm btn-primary">Edit</a>
                 </td>
             </tr>
             {% endfor %}

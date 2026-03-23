@@ -23,6 +23,48 @@ def update_settings():
         flash(f'Error updating settings: {e}', 'danger')
     return redirect(url_for('main.index'))
 
+@bp.route('/day/<string:date_str>/quick_update', methods=['POST'])
+def day_quick_update(date_str):
+    try:
+        day_date = datetime.strptime(date_str, '%Y-%m-%d').date()
+    except ValueError:
+        flash('Invalid date format.', 'danger')
+        return redirect(url_for('main.index'))
+
+    day_record = DayRecord.query.get_or_404(day_date)
+
+    # Check if there are more than 2 periods already (shouldn't use quick edit)
+    if len(day_record.periods) > 2:
+        flash('This day has more than 2 periods. Please use the advanced edit page.', 'warning')
+        return redirect(url_for('main.index'))
+
+    # Clear existing periods
+    for p in list(day_record.periods):
+        db.session.delete(p)
+
+    # Parse new periods from form
+    entries = request.form.getlist('entry_time[]')
+    exits = request.form.getlist('exit_time[]')
+
+    for entry_str, exit_str in zip(entries, exits):
+        if not entry_str:
+            continue
+
+        entry_t = datetime.strptime(entry_str, '%H:%M').time()
+        exit_t = datetime.strptime(exit_str, '%H:%M').time() if exit_str else None
+
+        new_period = TimePeriod(day=day_record, entry_time=entry_t, exit_time=exit_t)
+        db.session.add(new_period)
+
+    try:
+        db.session.commit()
+        flash(f'Periods for {day_date} updated successfully!', 'success')
+    except Exception as e:
+        db.session.rollback()
+        flash(f'Error saving quick update data: {e}', 'danger')
+
+    return redirect(url_for('main.index'))
+
 @bp.route('/day/<string:date_str>', methods=['GET', 'POST'])
 def day_edit(date_str):
     try:

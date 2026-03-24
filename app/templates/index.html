@@ -3,12 +3,12 @@
 {% block content %}
 <div class="row mb-4 align-items-center">
     <div class="col-md-6">
-        <h2 class="mb-0">Dashboard</h2>
+        <h2 class="mb-0">Painel Geral</h2>
     </div>
     <div class="col-md-6 text-md-end mt-3 mt-md-0">
-        <h4 class="mb-0">Current Balance:
+        <h4 class="mb-0">Saldo Atual:
             <span class="{{ 'positive' if current_balance >= 0 else 'negative' }}">
-                {{ "%.2f"|format(current_balance) }}h
+                {{ current_balance | format_balance }}
             </span>
         </h4>
     </div>
@@ -18,30 +18,30 @@
     <table class="table table-bordered table-hover align-middle text-center">
         <thead class="table-dark">
             <tr>
-                <th style="width: 10%;">Date</th>
-                <th style="width: 8%;">Type</th>
-                <th style="width: 50%;">Periods (Quick Edit)</th>
-                <th style="width: 8%;">Worked</th>
-                <th style="width: 8%;">Expected</th>
-                <th style="width: 8%;">Daily Delta</th>
-                <th style="width: 8%;">Acc. Bal.</th>
+                <th style="width: 10%;">Data</th>
+                <th style="width: 8%;">Tipo</th>
+                <th style="width: 50%;">Períodos (Edição Rápida)</th>
+                <th style="width: 8%;">Trabalhado</th>
+                <th style="width: 8%;">Esperado</th>
+                <th style="width: 8%;">Delta Diário</th>
+                <th style="width: 8%;">Saldo Acumulado</th>
             </tr>
         </thead>
         <tbody>
             {% for record in history %}
             <tr class="{% if record.is_holiday or record.manual_holiday %}table-warning{% elif record.is_weekend %}table-light{% endif %}">
                 <td>
-                    <strong>{{ record.date.strftime('%Y-%m-%d') }}</strong><br>
-                    <small class="text-muted">{{ record.date.strftime('%a') }}</small><br>
-                    <a href="{{ url_for('main.day_edit', date_str=record.date) }}" class="btn btn-sm btn-outline-primary mt-1" style="font-size: 0.70rem; padding: 0.15rem 0.4rem;">Advanced Edit</a>
+                    <strong>{{ record.date.strftime('%d/%m/%Y') }}</strong><br>
+                    <small class="text-muted">{{ record.date | ptbr_weekday }}</small><br>
+                    <a href="{{ url_for('main.day_edit', date_str=record.date) }}" class="btn btn-sm btn-outline-primary mt-1" style="font-size: 0.70rem; padding: 0.15rem 0.4rem;">Avançado</a>
                 </td>
                 <td>
                     {% if record.is_holiday or record.manual_holiday %}
-                        <span class="badge bg-warning text-dark">Holiday</span>
+                        <span class="badge bg-warning text-dark">Feriado</span>
                     {% elif record.is_weekend %}
-                        <span class="badge bg-secondary">Weekend</span>
+                        <span class="badge bg-secondary">Fim de Semana</span>
                     {% else %}
-                        <span class="badge bg-success">Workday</span>
+                        <span class="badge bg-success">Dia Útil</span>
                     {% endif %}
                 </td>
 
@@ -50,10 +50,10 @@
                         <div class="d-flex flex-column gap-1">
                             {% for p in record.periods %}
                                 <div class="small fw-bold">
-                                    Period {{ loop.index }}: {{ p.entry_time.strftime('%H:%M') }} - {{ p.exit_time.strftime('%H:%M') if p.exit_time else '(working)' }}
+                                    Período {{ loop.index }}: {{ p.entry_time.strftime('%H:%M') }} - {{ p.exit_time.strftime('%H:%M') if p.exit_time else '(trabalhando)' }}
                                 </div>
                             {% endfor %}
-                            <small class="text-muted">More than 2 periods. Use <strong>Advanced Edit</strong> to modify.</small>
+                            <small class="text-muted">Mais de 2 períodos. Use <strong>Avançado</strong> para modificar.</small>
                         </div>
                     {% else %}
                         <!-- Inline Quick Form -->
@@ -62,40 +62,40 @@
                             {% set p2 = record.periods[1] if record.periods|length > 1 else None %}
 
                             <div class="input-group input-group-sm" style="max-width: 180px;">
-                                <span class="input-group-text bg-light border-secondary">In</span>
+                                <span class="input-group-text bg-light border-secondary">Ent.</span>
                                 <input type="time" name="entry_time[]" class="form-control border-secondary text-center" value="{{ p1.entry_time.strftime('%H:%M') if p1 else '' }}">
                             </div>
                             <div class="input-group input-group-sm" style="max-width: 180px;">
-                                <span class="input-group-text bg-light border-secondary">Out</span>
+                                <span class="input-group-text bg-light border-secondary">Saí.</span>
                                 <input type="time" name="exit_time[]" class="form-control border-secondary text-center" value="{{ p1.exit_time.strftime('%H:%M') if p1 and p1.exit_time else '' }}">
                             </div>
 
                             <div class="input-group input-group-sm" style="max-width: 180px;">
-                                <span class="input-group-text bg-light border-secondary">In</span>
+                                <span class="input-group-text bg-light border-secondary">Ent.</span>
                                 <input type="time" name="entry_time[]" class="form-control border-secondary text-center" value="{{ p2.entry_time.strftime('%H:%M') if p2 else '' }}">
                             </div>
                             <div class="input-group input-group-sm" style="max-width: 180px;">
-                                <span class="input-group-text bg-light border-secondary">Out</span>
+                                <span class="input-group-text bg-light border-secondary">Saí.</span>
                                 <input type="time" name="exit_time[]" class="form-control border-secondary text-center" value="{{ p2.exit_time.strftime('%H:%M') if p2 and p2.exit_time else '' }}">
                             </div>
 
-                            <button type="submit" class="btn btn-sm btn-success">Save ✓</button>
+                            <button type="submit" class="btn btn-sm btn-success">Salvar ✓</button>
                         </form>
                     {% endif %}
                 </td>
 
-                <td>{{ "%.2f"|format(record.worked_hours) }}</td>
-                <td>{{ "%.2f"|format(record.expected_hours) }}</td>
+                <td>{{ record.worked_hours | format_time }}</td>
+                <td>{{ record.expected_hours | format_time }}</td>
                 <td class="{{ 'text-success fw-bold' if record.daily_delta > 0 else 'text-danger fw-bold' if record.daily_delta < 0 else '' }}">
-                    {{ "%+.2f"|format(record.daily_delta) }}
+                    {{ record.daily_delta | format_time(True) }}
                 </td>
                 <td>
                     {% if record.override is not none %}
-                        <span class="badge bg-info text-dark" title="Manual Override">
-                            {{ "%.2f"|format(record.balance) }}h *
+                        <span class="badge bg-info text-dark" title="Ajuste Manual">
+                            {{ record.balance | format_balance }} *
                         </span>
                     {% else %}
-                        <strong>{{ "%.2f"|format(record.balance) }}h</strong>
+                        <strong>{{ record.balance | format_balance }}</strong>
                     {% endif %}
                 </td>
             </tr>

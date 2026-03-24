@@ -1,9 +1,9 @@
-[2026-03-23 22:15:41 +0000] [7906] [INFO] Starting gunicorn 25.1.0
-[2026-03-23 22:15:41 +0000] [7906] [INFO] Listening at: http://0.0.0.0:8000 (7906)
-[2026-03-23 22:15:41 +0000] [7906] [INFO] Using worker: sync
-[2026-03-23 22:15:41 +0000] [7906] [INFO] Control socket listening at /app/gunicorn.ctl
-[2026-03-23 22:15:41 +0000] [7992] [INFO] Booting worker with pid: 7992
-[2026-03-23 22:16:16 +0000] [7992] [INFO] Worker exiting (pid: 7992)
-[2026-03-23 22:16:16 +0000] [7906] [INFO] Handling signal: term
-[2026-03-23 22:16:17 +0000] [7906] [INFO] Worker (pid:7992) was sent SIGTERM!
-[2026-03-23 22:16:17 +0000] [7906] [INFO] Shutting down: Master
+[2026-03-24 00:47:51 +0000] [12535] [INFO] Starting gunicorn 25.1.0
+[2026-03-24 00:47:51 +0000] [12535] [INFO] Listening at: http://0.0.0.0:8000 (12535)
+[2026-03-24 00:47:51 +0000] [12535] [INFO] Using worker: sync
+[2026-03-24 00:47:51 +0000] [12535] [INFO] Control socket listening at /app/gunicorn.ctl
+[2026-03-24 00:47:52 +0000] [12618] [INFO] Booting worker with pid: 12618
+[2026-03-24 00:48:45 +0000] [12618] [INFO] Worker exiting (pid: 12618)
+[2026-03-24 00:48:45 +0000] [12535] [INFO] Handling signal: term
+[2026-03-24 00:48:45 +0000] [12535] [INFO] Worker (pid:12618) was sent SIGTERM!
+[2026-03-24 00:48:45 +0000] [12535] [INFO] Shutting down: Master

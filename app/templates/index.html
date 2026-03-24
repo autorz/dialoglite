@@ -29,7 +29,7 @@
         </thead>
         <tbody>
             {% for record in history %}
-            <tr class="{% if record.is_holiday or record.manual_holiday %}table-warning{% elif record.is_weekend %}table-light{% endif %}">
+            <tr class="{% if record.is_consolidated %}table-consolidated{% elif record.is_holiday or record.manual_holiday %}table-warning{% elif record.is_weekend %}table-light{% endif %}">
                 <td>
                     <strong>{{ record.date.strftime('%d/%m/%Y') }}</strong><br>
                     <small class="text-muted">{{ record.date | ptbr_weekday }}</small><br>

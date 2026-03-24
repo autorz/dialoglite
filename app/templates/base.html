@@ -1,31 +1,32 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Time Tracking</title>
+    <title>Controle de Ponto</title>
     <!-- Use local Bootstrap CSS -->
     <link href="{{ url_for('static', filename='css/bootstrap.min.css') }}" rel="stylesheet">
     <!-- Optional custom css -->
     <style>
         .weekend { background-color: #f8f9fa; }
         .holiday { background-color: #ffeeba; }
-        .negative { color: red; font-weight: bold; }
-        .positive { color: green; font-weight: bold; }
+        .negative { color: #dc3545; font-weight: bold; }
+        .positive { color: #198754; font-weight: bold; }
     </style>
+    <link href="{{ url_for('static', filename='css/catppuccin.css') }}" rel="stylesheet">
 </head>
 <body>
 
 <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
   <div class="container">
-    <a class="navbar-brand" href="{{ url_for('main.index') }}">Time Tracker</a>
+    <a class="navbar-brand" href="{{ url_for('main.index') }}">Controle de Ponto</a>
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
       <span class="navbar-toggler-icon"></span>
     </button>
     <div class="collapse navbar-collapse" id="navbarNav">
       <ul class="navbar-nav ms-auto">
         <li class="nav-item">
-          <a class="nav-link" href="#" data-bs-toggle="modal" data-bs-target="#settingsModal">Settings</a>
+          <a class="nav-link" href="#" data-bs-toggle="modal" data-bs-target="#settingsModal">Configurações</a>
         </li>
       </ul>
     </div>
@@ -38,7 +39,7 @@
         {% for category, message in messages %}
           <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
             {{ message }}
-            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Fechar"></button>
           </div>
         {% endfor %}
       {% endif %}
@@ -53,19 +54,19 @@
     <div class="modal-content">
       <form action="{{ url_for('main.update_settings') }}" method="POST">
           <div class="modal-header">
-            <h5 class="modal-title">Settings</h5>
+            <h5 class="modal-title">Configurações</h5>
             <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
           </div>
           <div class="modal-body">
             <div class="mb-3">
-              <label class="form-label">History Start Date</label>
+              <label class="form-label">Data de Início do Histórico</label>
               <input type="date" name="start_date" class="form-control" value="{{ settings.start_date if settings else '2026-01-01' }}" required>
-              <small class="text-muted">Warning: Moving this date forward will delete older records.</small>
+              <small class="text-muted">Aviso: Mover esta data para o futuro excluirá os registros anteriores.</small>
             </div>
           </div>
           <div class="modal-footer">
-            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-            <button type="submit" class="btn btn-primary">Save changes</button>
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fechar</button>
+            <button type="submit" class="btn btn-primary">Salvar alterações</button>
           </div>
       </form>
     </div>

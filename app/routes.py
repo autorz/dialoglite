@@ -18,9 +18,9 @@ def update_settings():
         new_date_str = request.form.get('start_date')
         new_date = datetime.strptime(new_date_str, '%Y-%m-%d').date()
         set_start_date(new_date)
-        flash('Settings updated successfully!', 'success')
+        flash('Configurações atualizadas com sucesso!', 'success')
     except Exception as e:
-        flash(f'Error updating settings: {e}', 'danger')
+        flash(f'Erro ao atualizar configurações: {e}', 'danger')
     return redirect(url_for('main.index'))
 
 @bp.route('/day/<string:date_str>/quick_update', methods=['POST'])
@@ -28,14 +28,14 @@ def day_quick_update(date_str):
     try:
         day_date = datetime.strptime(date_str, '%Y-%m-%d').date()
     except ValueError:
-        flash('Invalid date format.', 'danger')
+        flash('Formato de data inválido.', 'danger')
         return redirect(url_for('main.index'))
 
     day_record = DayRecord.query.get_or_404(day_date)
 
     # Check if there are more than 2 periods already (shouldn't use quick edit)
     if len(day_record.periods) > 2:
-        flash('This day has more than 2 periods. Please use the advanced edit page.', 'warning')
+        flash('Este dia tem mais de 2 períodos. Por favor, use a edição avançada.', 'warning')
         return redirect(url_for('main.index'))
 
     # Clear existing periods
@@ -58,10 +58,10 @@ def day_quick_update(date_str):
 
     try:
         db.session.commit()
-        flash(f'Periods for {day_date} updated successfully!', 'success')
+        flash(f'Períodos para {day_date.strftime("%d/%m/%Y")} atualizados com sucesso!', 'success')
     except Exception as e:
         db.session.rollback()
-        flash(f'Error saving quick update data: {e}', 'danger')
+        flash(f'Erro ao salvar edição rápida: {e}', 'danger')
 
     return redirect(url_for('main.index'))
 
@@ -70,7 +70,7 @@ def day_edit(date_str):
     try:
         day_date = datetime.strptime(date_str, '%Y-%m-%d').date()
     except ValueError:
-        flash('Invalid date format.', 'danger')
+        flash('Formato de data inválido.', 'danger')
         return redirect(url_for('main.index'))
 
     day_record = DayRecord.query.get_or_404(day_date)
@@ -83,6 +83,8 @@ def day_edit(date_str):
         override_val = request.form.get('balance_override')
         if override_val:
             try:
+                # Recebemos em float? Não, precisamos parsear um float no formato (ex: 10.5 horas).
+                # No entanto o usuario digitará algo no html. Assumimos horas.
                 day_record.balance_override = float(override_val)
             except ValueError:
                 day_record.balance_override = None
@@ -110,10 +112,10 @@ def day_edit(date_str):
 
         try:
             db.session.commit()
-            flash('Day updated successfully!', 'success')
+            flash('Dia atualizado com sucesso!', 'success')
             return redirect(url_for('main.index'))
         except Exception as e:
             db.session.rollback()
-            flash(f'Error saving data: {e}', 'danger')
+            flash(f'Erro ao salvar dados: {e}', 'danger')
 
     return render_template('day_edit.html', day=day_record)

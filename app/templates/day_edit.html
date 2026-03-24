@@ -1,0 +1,111 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="card shadow-sm max-w-lg mx-auto" style="max-width: 800px;">
+    <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+        <h4 class="mb-0">Edit Day: {{ day.date.strftime('%Y-%m-%d (%A)') }}</h4>
+        <a href="{{ url_for('main.index') }}" class="btn btn-sm btn-light">Back</a>
+    </div>
+    <div class="card-body">
+        <form action="{{ url_for('main.day_edit', date_str=day.date) }}" method="POST">
+
+            <div class="row mb-4">
+                <div class="col-md-6">
+                    <label class="form-label fw-bold">Daily Options</label>
+                    <div class="form-check form-switch mb-2">
+                        <input class="form-check-input" type="checkbox" id="manual_holiday" name="manual_holiday" {% if day.manual_holiday %}checked{% endif %}>
+                        <label class="form-check-label" for="manual_holiday">Force Holiday</label>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label fw-bold" for="balance_override">Balance Override (Optional)</label>
+                    <input type="number" step="0.01" class="form-control" id="balance_override" name="balance_override" value="{{ day.balance_override if day.balance_override is not none else '' }}" placeholder="e.g. 10.5">
+                    <small class="text-muted">Set exact accumulated balance from this day forward.</small>
+                </div>
+            </div>
+
+            <hr>
+
+            <h5 class="mb-3">Time Periods</h5>
+            <div id="periods-container">
+                {% if day.periods %}
+                    {% for p in day.periods %}
+                    <div class="row mb-2 period-row align-items-center">
+                        <div class="col">
+                            <input type="time" class="form-control" name="entry_time[]" value="{{ p.entry_time.strftime('%H:%M') }}" required>
+                        </div>
+                        <div class="col-auto text-muted">to</div>
+                        <div class="col">
+                            <input type="time" class="form-control" name="exit_time[]" value="{{ p.exit_time.strftime('%H:%M') if p.exit_time else '' }}">
+                        </div>
+                        <div class="col-auto">
+                            <button type="button" class="btn btn-danger btn-sm remove-period">X</button>
+                        </div>
+                    </div>
+                    {% endfor %}
+                {% else %}
+                    <!-- Default empty row if no periods exist -->
+                    <div class="row mb-2 period-row align-items-center">
+                        <div class="col">
+                            <input type="time" class="form-control" name="entry_time[]" required>
+                        </div>
+                        <div class="col-auto text-muted">to</div>
+                        <div class="col">
+                            <input type="time" class="form-control" name="exit_time[]">
+                        </div>
+                        <div class="col-auto">
+                            <button type="button" class="btn btn-danger btn-sm remove-period">X</button>
+                        </div>
+                    </div>
+                {% endif %}
+            </div>
+
+            <button type="button" class="btn btn-outline-secondary mb-4" id="add-period">+ Add Period</button>
+
+            <div class="mb-4">
+                <label for="notes" class="form-label fw-bold">Notes</label>
+                <textarea class="form-control" id="notes" name="notes" rows="3">{{ day.notes }}</textarea>
+            </div>
+
+            <div class="d-grid">
+                <button type="submit" class="btn btn-success btn-lg">Save Changes</button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const container = document.getElementById('periods-container');
+    const addButton = document.getElementById('add-period');
+
+    // Add new period row
+    addButton.addEventListener('click', function() {
+        const row = document.createElement('div');
+        row.className = 'row mb-2 period-row align-items-center';
+        row.innerHTML = `
+            <div class="col">
+                <input type="time" class="form-control" name="entry_time[]" required>
+            </div>
+            <div class="col-auto text-muted">to</div>
+            <div class="col">
+                <input type="time" class="form-control" name="exit_time[]">
+            </div>
+            <div class="col-auto">
+                <button type="button" class="btn btn-danger btn-sm remove-period">X</button>
+            </div>
+        `;
+        container.appendChild(row);
+    });
+
+    // Remove period row
+    container.addEventListener('click', function(e) {
+        if (e.target.classList.contains('remove-period')) {
+            e.target.closest('.period-row').remove();
+        }
+    });
+});
+</script>
+{% endblock %}

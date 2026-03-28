@@ -56,8 +56,6 @@ def day_quick_update(date_str):
         new_period = TimePeriod(day=day_record, entry_time=entry_t, exit_time=exit_t)
         db.session.add(new_period)
 
-    day_record.is_consolidated = True
-
     try:
         db.session.commit()
         flash(f'Períodos para {day_date.strftime("%d/%m/%Y")} atualizados com sucesso!', 'success')
@@ -81,6 +79,7 @@ def day_edit(date_str):
         # Update Notes and Toggles
         day_record.notes = request.form.get('notes', '')
         day_record.manual_holiday = 'manual_holiday' in request.form
+        day_record.is_consolidated = 'is_consolidated' in request.form
 
         override_val = request.form.get('balance_override')
         if override_val:
@@ -111,8 +110,6 @@ def day_edit(date_str):
 
             new_period = TimePeriod(day=day_record, entry_time=entry_t, exit_time=exit_t)
             db.session.add(new_period)
-
-        day_record.is_consolidated = True
 
         try:
             db.session.commit()

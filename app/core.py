@@ -1,5 +1,6 @@
 from datetime import date, timedelta, time, datetime
 import holidays
+from sqlalchemy.orm import joinedload
 from .models import db, Settings, DayRecord, TimePeriod
 
 # Pre-fetch Brazilian holidays for state of SP
@@ -91,7 +92,7 @@ def get_history_with_balances():
     settings = get_settings()
 
     # Fetch all days ordered ascending to calculate running balance
-    days = DayRecord.query.order_by(DayRecord.date.asc()).all()
+    days = DayRecord.query.options(joinedload(DayRecord.periods)).order_by(DayRecord.date.asc()).all()
 
     running_balance = 0.0
     history = []

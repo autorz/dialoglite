@@ -138,3 +138,8 @@ input[type="time"]::-webkit-calendar-picker-indicator {
     background-color: var(--ctp-blue) !important;
     border-color: var(--ctp-blue) !important;
 }
+
+/* Consolidated Row Color */
+.table .table-consolidated > td {
+  background-color: rgba(137, 180, 250, 0.1) !important; /* Blue tint */
+}

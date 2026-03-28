@@ -12,7 +12,6 @@ class DayRecord(db.Model):
     notes = db.Column(db.Text, default="")
     manual_holiday = db.Column(db.Boolean, default=False)
     balance_override = db.Column(db.Float, nullable=True)
-    is_consolidated = db.Column(db.Boolean, default=False)
 
     # Use backref to easily get periods from day
     periods = db.relationship('TimePeriod', backref='day', lazy=True, cascade="all, delete-orphan", order_by="TimePeriod.entry_time")

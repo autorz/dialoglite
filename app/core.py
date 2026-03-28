@@ -135,6 +135,7 @@ def get_history_with_balances():
             'notes': day.notes,
             'manual_holiday': day.manual_holiday,
             'override': day.balance_override,
+            'is_consolidated': day.is_consolidated,
             'periods': day.periods
         })
 

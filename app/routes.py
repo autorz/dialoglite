@@ -56,6 +56,8 @@ def day_quick_update(date_str):
         new_period = TimePeriod(day=day_record, entry_time=entry_t, exit_time=exit_t)
         db.session.add(new_period)
 
+    day_record.is_consolidated = True
+
     try:
         db.session.commit()
         flash(f'Períodos para {day_date.strftime("%d/%m/%Y")} atualizados com sucesso!', 'success')

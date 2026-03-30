@@ -66,6 +66,25 @@ def auto_populate_days():
     if records_added:
         db.session.commit()
 
+def update_day_periods(day_record: DayRecord, entries: list, exits: list):
+    """
+    Clears existing periods for a day record and adds new ones from entries and exits lists.
+    """
+    # Clear existing periods
+    for p in list(day_record.periods):
+        db.session.delete(p)
+
+    # Parse new periods from form arrays
+    for entry_str, exit_str in zip(entries, exits):
+        if not entry_str:
+            continue
+
+        entry_t = datetime.strptime(entry_str, '%H:%M').time()
+        exit_t = datetime.strptime(exit_str, '%H:%M').time() if exit_str else None
+
+        new_period = TimePeriod(day=day_record, entry_time=entry_t, exit_time=exit_t)
+        db.session.add(new_period)
+
 def calculate_daily_hours(day_record: DayRecord) -> float:
     total_hours = 0.0
     for period in day_record.periods:

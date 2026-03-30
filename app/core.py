@@ -1,11 +1,18 @@
 from datetime import date, timedelta, time, datetime
-import holidays
-from .models import db, Settings, DayRecord, TimePeriod
+from typing import TYPE_CHECKING, Tuple, List
+
+if TYPE_CHECKING:
+    from .models import DayRecord, Settings
 
 # Pre-fetch Brazilian holidays for state of SP
-br_holidays = holidays.BR(subdiv='SP', years=range(2020, 2040))
+try:
+    import holidays
+    br_holidays = holidays.BR(subdiv='SP', years=range(2020, 2040))
+except ImportError:
+    br_holidays = {}
 
 def get_settings():
+    from .models import Settings, db
     settings = Settings.query.first()
     if not settings:
         settings = Settings(start_date=date(2026, 1, 1))
@@ -14,6 +21,7 @@ def get_settings():
     return settings
 
 def set_start_date(new_start_date: date):
+    from .models import DayRecord, db
     settings = get_settings()
     settings.start_date = new_start_date
     db.session.commit()
@@ -21,7 +29,7 @@ def set_start_date(new_start_date: date):
     DayRecord.query.filter(DayRecord.date < new_start_date).delete()
     db.session.commit()
 
-def is_holiday(check_date: date, day_record: DayRecord) -> bool:
+def is_holiday(check_date: date, day_record: "DayRecord") -> bool:
     if day_record and day_record.manual_holiday:
         return True
     return check_date in br_holidays
@@ -31,6 +39,7 @@ def auto_populate_days():
     Ensure all days from start_date to today are created in the database.
     Auto-fills periods for normal working days.
     """
+    from .models import DayRecord, TimePeriod, db
     settings = get_settings()
     start_date = settings.start_date
     today = date.today()
@@ -66,7 +75,7 @@ def auto_populate_days():
     if records_added:
         db.session.commit()
 
-def calculate_daily_hours(day_record: DayRecord) -> float:
+def calculate_daily_hours(day_record: "DayRecord") -> float:
     total_hours = 0.0
     for period in day_record.periods:
         if period.exit_time:
@@ -83,11 +92,12 @@ def calculate_daily_hours(day_record: DayRecord) -> float:
             total_hours += duration
     return total_hours
 
-def get_history_with_balances():
+def get_history_with_balances() -> Tuple[List[dict], float]:
     """
     Returns a list of day dictionaries with calculated overtime balance.
     Sorted descending by date for display, but calculated ascending.
     """
+    from .models import DayRecord
     settings = get_settings()
 
     # Fetch all days ordered ascending to calculate running balance

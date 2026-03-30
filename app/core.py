@@ -97,11 +97,12 @@ def get_history_with_balances() -> Tuple[List[dict], float]:
     Returns a list of day dictionaries with calculated overtime balance.
     Sorted descending by date for display, but calculated ascending.
     """
+    from sqlalchemy.orm import joinedload
     from .models import DayRecord
     settings = get_settings()
 
     # Fetch all days ordered ascending to calculate running balance
-    days = DayRecord.query.order_by(DayRecord.date.asc()).all()
+    days = DayRecord.query.options(joinedload(DayRecord.periods)).order_by(DayRecord.date.asc()).all()
 
     running_balance = 0.0
     history = []

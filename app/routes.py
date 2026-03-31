@@ -1,7 +1,7 @@
 from flask import Blueprint, render_template, request, redirect, url_for, flash
 from datetime import datetime, date
 from .models import db, Settings, DayRecord, TimePeriod
-from .core import get_settings, set_start_date, auto_populate_days, get_history_with_balances
+from .core import get_settings, set_start_date, auto_populate_days, get_history_with_balances, update_day_periods
 
 bp = Blueprint('main', __name__)
 
@@ -38,23 +38,10 @@ def day_quick_update(date_str):
         flash('Este dia tem mais de 2 períodos. Por favor, use a edição avançada.', 'warning')
         return redirect(url_for('main.index'))
 
-    # Clear existing periods
-    for p in list(day_record.periods):
-        db.session.delete(p)
-
     # Parse new periods from form
     entries = request.form.getlist('entry_time[]')
     exits = request.form.getlist('exit_time[]')
-
-    for entry_str, exit_str in zip(entries, exits):
-        if not entry_str:
-            continue
-
-        entry_t = datetime.strptime(entry_str, '%H:%M').time()
-        exit_t = datetime.strptime(exit_str, '%H:%M').time() if exit_str else None
-
-        new_period = TimePeriod(day=day_record, entry_time=entry_t, exit_time=exit_t)
-        db.session.add(new_period)
+    update_day_periods(day_record, entries, exits)
 
     day_record.is_consolidated = True
 
@@ -95,23 +82,9 @@ def day_edit(date_str):
             day_record.balance_override = None
 
         # Update Periods
-        # Clear existing periods
-        for p in list(day_record.periods):
-            db.session.delete(p)
-
-        # Parse new periods from form arrays
         entries = request.form.getlist('entry_time[]')
         exits = request.form.getlist('exit_time[]')
-
-        for entry_str, exit_str in zip(entries, exits):
-            if not entry_str:
-                continue
-
-            entry_t = datetime.strptime(entry_str, '%H:%M').time()
-            exit_t = datetime.strptime(exit_str, '%H:%M').time() if exit_str else None
-
-            new_period = TimePeriod(day=day_record, entry_time=entry_t, exit_time=exit_t)
-            db.session.add(new_period)
+        update_day_periods(day_record, entries, exits)
 
         try:
             db.session.commit()

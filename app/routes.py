@@ -68,6 +68,7 @@ def day_edit(date_str):
         # Update Notes and Toggles
         day_record.notes = request.form.get('notes', '')
         day_record.manual_holiday = 'manual_holiday' in request.form
+        day_record.is_consolidated = 'is_consolidated' in request.form
 
         override_val = request.form.get('balance_override')
         if override_val:
@@ -84,8 +85,6 @@ def day_edit(date_str):
         entries = request.form.getlist('entry_time[]')
         exits = request.form.getlist('exit_time[]')
         update_day_periods(day_record, entries, exits)
-
-        day_record.is_consolidated = True
 
         try:
             db.session.commit()

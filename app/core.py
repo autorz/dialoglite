@@ -164,3 +164,86 @@ def get_history_with_balances() -> Tuple[List[dict], float]:
     history.reverse()
 
     return history, running_balance
+
+
+def get_dashboard_stats(history: List[dict]) -> dict:
+    today = date.today()
+
+    # 1. Gather workdays extras
+    # History is descending (newest first)
+    last_7_days_deltas = []
+    last_30_days_deltas = []
+
+    for record in history:
+        record_date = record['date']
+        # Only consider up to today
+        if record_date > today:
+            continue
+
+        days_ago = (today - record_date).days
+
+        # We only consider workdays (not weekend, not holiday)
+        if not record['is_weekend'] and not record['is_holiday']:
+            if days_ago < 7:
+                last_7_days_deltas.append(record['daily_delta'])
+            if days_ago < 30:
+                last_30_days_deltas.append(record['daily_delta'])
+
+    avg_7_days = sum(last_7_days_deltas) / len(last_7_days_deltas) if last_7_days_deltas else 0.0
+    avg_30_days = sum(last_30_days_deltas) / len(last_30_days_deltas) if last_30_days_deltas else 0.0
+
+    # 2. Forecast expected workdays
+    future_30_workdays = 0
+    future_90_workdays = 0
+
+    for i in range(1, 91):
+        future_date = today + timedelta(days=i)
+
+        # We need a DayRecord to pass to is_holiday for manual checks.
+        # But for future dates, they might not exist yet.
+        # For forecasting, we'll just check if it's a Brazilian holiday or weekend.
+        # Since manual holidays are usually set per day record, we might miss future manual holidays,
+        # but standard BR holidays will be caught.
+
+        # Fetch if exists to check manual holiday
+        existing = DayRecord.query.get(future_date)
+        is_hol = is_holiday(future_date, existing)
+        is_weekend = future_date.weekday() >= 5
+
+        if not is_weekend and not is_hol:
+            if i <= 30:
+                future_30_workdays += 1
+            if i <= 90:
+                future_90_workdays += 1
+
+    forecast_30_days = future_30_workdays * avg_30_days
+    forecast_90_days = future_90_workdays * avg_30_days
+
+    # 3. Chart data (last 90 days, ascending)
+    chart_data = []
+
+    # Get last 90 days records (or less if history is shorter)
+    # Filter for <= today and take last 90
+    past_records = [r for r in history if r['date'] <= today]
+    # Since history is newest first, slice top 90 and then reverse to make it ascending
+    last_90_records = list(reversed(past_records[:90]))
+
+    # Calculate 7-day moving average
+    for i, record in enumerate(last_90_records):
+        start_idx = max(0, i - 6)
+        window = last_90_records[start_idx:i+1]
+        moving_avg = sum(r['balance'] for r in window) / len(window) if window else 0.0
+
+        chart_data.append({
+            'date': record['date'].strftime('%Y-%m-%d'),
+            'balance': round(record['balance'], 2),
+            'moving_avg_7': round(moving_avg, 2)
+        })
+
+    return {
+        'avg_7_days': avg_7_days,
+        'avg_30_days': avg_30_days,
+        'forecast_30_days': forecast_30_days,
+        'forecast_90_days': forecast_90_days,
+        'chart_data': chart_data
+    }

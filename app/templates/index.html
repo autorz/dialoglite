@@ -14,6 +14,54 @@
     </div>
 </div>
 
+
+<div class="row mb-4">
+    <div class="col-md-3">
+        <div class="card bg-light">
+            <div class="card-body text-center">
+                <h6 class="card-title text-muted">Média Extras (7d)</h6>
+                <h4 class="card-text fw-bold">{{ stats.avg_7_days | format_time(True) }}</h4>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card bg-light">
+            <div class="card-body text-center">
+                <h6 class="card-title text-muted">Média Extras (30d)</h6>
+                <h4 class="card-text fw-bold">{{ stats.avg_30_days | format_time(True) }}</h4>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card bg-light">
+            <div class="card-body text-center">
+                <h6 class="card-title text-muted">Previsão (30d)</h6>
+                <h4 class="card-text fw-bold">{{ stats.forecast_30_days | format_time(True) }}</h4>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card bg-light">
+            <div class="card-body text-center">
+                <h6 class="card-title text-muted">Previsão (90d)</h6>
+                <h4 class="card-text fw-bold">{{ stats.forecast_90_days | format_time(True) }}</h4>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title">Saldo (Últimos 90 dias)</h5>
+                <canvas id="balanceChart" width="400" height="100"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+
 <div class="table-responsive">
     <table class="table table-bordered table-hover align-middle text-center">
         <thead class="table-dark">
@@ -103,4 +151,76 @@
         </tbody>
     </table>
 </div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/chart.umd.js') }}"></script>
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        var ctx = document.getElementById('balanceChart').getContext('2d');
+        var chartData = {{ stats.chart_data | tojson | safe }};
+
+        var labels = chartData.map(function(d) {
+            var parts = d.date.split('-');
+            return parts[2] + '/' + parts[1]; // DD/MM format
+        });
+        var balances = chartData.map(function(d) { return d.balance; });
+        var movingAverages = chartData.map(function(d) { return d.moving_avg_7; });
+
+        var chart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: 'Saldo Acumulado',
+                    data: balances,
+                    borderColor: 'rgba(54, 162, 235, 1)',
+                    backgroundColor: 'rgba(54, 162, 235, 0.1)',
+                    borderWidth: 2,
+                    fill: true,
+                    tension: 0.1
+                }, {
+                    label: 'Média Móvel (7d)',
+                    data: movingAverages,
+                    borderColor: 'rgba(255, 99, 132, 1)',
+                    borderWidth: 2,
+                    borderDash: [5, 5],
+                    fill: false,
+                    tension: 0.1
+                }]
+            },
+            options: {
+                responsive: true,
+                scales: {
+                    y: {
+                        title: {
+                            display: true,
+                            text: 'Horas'
+                        }
+                    }
+                },
+                plugins: {
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                let label = context.dataset.label || '';
+                                if (label) {
+                                    label += ': ';
+                                }
+                                if (context.parsed.y !== null) {
+                                    // Format hours to HH:MM format manually
+                                    let hours = Math.floor(Math.abs(context.parsed.y));
+                                    let minutes = Math.floor((Math.abs(context.parsed.y) - hours) * 60);
+                                    let sign = context.parsed.y < 0 ? '-' : '+';
+                                    label += sign + String(hours).padStart(2, '0') + ':' + String(minutes).padStart(2, '0');
+                                }
+                                return label;
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    });
+</script>
 {% endblock %}

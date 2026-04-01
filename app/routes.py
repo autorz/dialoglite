@@ -1,7 +1,7 @@
 from flask import Blueprint, render_template, request, redirect, url_for, flash
 from datetime import datetime, date
 from .models import db, Settings, DayRecord, TimePeriod
-from .core import get_settings, set_start_date, auto_populate_days, get_history_with_balances, update_day_periods
+from .core import get_settings, set_start_date, auto_populate_days, get_history_with_balances, update_day_periods, get_dashboard_stats
 
 bp = Blueprint('main', __name__)
 
@@ -10,7 +10,8 @@ def index():
     auto_populate_days()
     settings = get_settings()
     history, current_balance = get_history_with_balances()
-    return render_template('index.html', history=history, current_balance=current_balance, settings=settings)
+    stats = get_dashboard_stats(history)
+    return render_template('index.html', history=history, current_balance=current_balance, settings=settings, stats=stats)
 
 @bp.route('/settings', methods=['POST'])
 def update_settings():

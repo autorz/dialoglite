@@ -57,29 +57,31 @@
                         </div>
                     {% else %}
                         <!-- Inline Quick Form -->
-                        <form action="{{ url_for('main.day_quick_update', date_str=record.date) }}" method="POST" class="d-flex align-items-center justify-content-center flex-wrap gap-2 m-0 p-0">
+                        <form action="{{ url_for('main.day_quick_update', date_str=record.date) }}" method="POST" class="d-flex flex-column align-items-center gap-2 m-0 p-0">
                             {% set p1 = record.periods[0] if record.periods|length > 0 else None %}
                             {% set p2 = record.periods[1] if record.periods|length > 1 else None %}
 
-                            <div class="input-group input-group-sm" style="max-width: 180px;">
-                                <span class="input-group-text bg-light border-secondary">Ent.</span>
-                                <input type="time" name="entry_time[]" class="form-control border-secondary text-center" value="{{ p1.entry_time.strftime('%H:%M') if p1 else '' }}">
+                            <div class="d-flex flex-wrap justify-content-center gap-2 w-100">
+                                <div class="input-group input-group-sm" style="max-width: 180px;">
+                                    <span class="input-group-text bg-light border-secondary">Ent.</span>
+                                    <input type="time" name="entry_time[]" class="form-control border-secondary text-center" value="{{ p1.entry_time.strftime('%H:%M') if p1 else '' }}">
+                                </div>
+                                <div class="input-group input-group-sm" style="max-width: 180px;">
+                                    <span class="input-group-text bg-light border-secondary">Saí.</span>
+                                    <input type="time" name="exit_time[]" class="form-control border-secondary text-center" value="{{ p1.exit_time.strftime('%H:%M') if p1 and p1.exit_time else '' }}">
+                                </div>
                             </div>
-                            <div class="input-group input-group-sm" style="max-width: 180px;">
-                                <span class="input-group-text bg-light border-secondary">Saí.</span>
-                                <input type="time" name="exit_time[]" class="form-control border-secondary text-center" value="{{ p1.exit_time.strftime('%H:%M') if p1 and p1.exit_time else '' }}">
+                            <div class="d-flex flex-wrap justify-content-center gap-2 w-100">
+                                <div class="input-group input-group-sm" style="max-width: 180px;">
+                                    <span class="input-group-text bg-light border-secondary">Ent.</span>
+                                    <input type="time" name="entry_time[]" class="form-control border-secondary text-center" value="{{ p2.entry_time.strftime('%H:%M') if p2 else '' }}">
+                                </div>
+                                <div class="input-group input-group-sm" style="max-width: 180px;">
+                                    <span class="input-group-text bg-light border-secondary">Saí.</span>
+                                    <input type="time" name="exit_time[]" class="form-control border-secondary text-center" value="{{ p2.exit_time.strftime('%H:%M') if p2 and p2.exit_time else '' }}">
+                                </div>
+                                <button type="submit" class="btn btn-sm btn-success">Salvar ✓</button>
                             </div>
-
-                            <div class="input-group input-group-sm" style="max-width: 180px;">
-                                <span class="input-group-text bg-light border-secondary">Ent.</span>
-                                <input type="time" name="entry_time[]" class="form-control border-secondary text-center" value="{{ p2.entry_time.strftime('%H:%M') if p2 else '' }}">
-                            </div>
-                            <div class="input-group input-group-sm" style="max-width: 180px;">
-                                <span class="input-group-text bg-light border-secondary">Saí.</span>
-                                <input type="time" name="exit_time[]" class="form-control border-secondary text-center" value="{{ p2.exit_time.strftime('%H:%M') if p2 and p2.exit_time else '' }}">
-                            </div>
-
-                            <button type="submit" class="btn btn-sm btn-success">Salvar ✓</button>
                         </form>
                     {% endif %}
                 </td>

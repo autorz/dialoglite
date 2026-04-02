@@ -1,13 +1,20 @@
- * Serving Flask app 'main'
- * Debug mode: on
-[31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
- * Running on all addresses (0.0.0.0)
- * Running on http://127.0.0.1:8000
- * Running on http://192.168.0.2:8000
-[33mPress CTRL+C to quit[0m
- * Restarting with stat
- * Debugger is active!
- * Debugger PIN: 824-871-970
-127.0.0.1 - - [28/Mar/2026 01:54:59] "GET /day/2026-03-24 HTTP/1.1" 200 -
-127.0.0.1 - - [28/Mar/2026 01:55:21] "[32mPOST /day/2026-03-24 HTTP/1.1[0m" 302 -
-127.0.0.1 - - [28/Mar/2026 01:55:43] "GET /day/2026-03-24 HTTP/1.1" 200 -
+Using CPython 3.12.13 interpreter at: /home/jules/.pyenv/versions/3.12.13/bin/python3.12
+Creating virtual environment at: .venv
+Downloading sqlalchemy (3.2MiB)
+Downloading pygments (1.2MiB)
+Downloading playwright (44.1MiB)
+Downloading holidays (1.3MiB)
+ Downloaded sqlalchemy
+ Downloaded pygments
+ Downloaded holidays
+ Downloaded playwright
+Installed 23 packages in 117ms
+[2026-04-02 01:24:44 +0000] [31893] [INFO] Starting gunicorn 25.1.0
+[2026-04-02 01:24:44 +0000] [31893] [INFO] Listening at: http://0.0.0.0:3000 (31893)
+[2026-04-02 01:24:44 +0000] [31893] [INFO] Using worker: sync
+[2026-04-02 01:24:44 +0000] [31893] [INFO] Control socket listening at /app/gunicorn.ctl
+[2026-04-02 01:24:44 +0000] [32639] [INFO] Booting worker with pid: 32639
+[2026-04-02 01:25:38 +0000] [31893] [INFO] Handling signal: term
+[2026-04-02 01:25:38 +0000] [32639] [INFO] Worker exiting (pid: 32639)
+[2026-04-02 01:25:38 +0000] [31893] [INFO] Worker (pid:32639) was sent SIGTERM!
+[2026-04-02 01:25:38 +0000] [31893] [INFO] Shutting down: Master

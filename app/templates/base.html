@@ -63,6 +63,11 @@
               <input type="date" name="start_date" class="form-control" value="{{ settings.start_date if settings else '2026-01-01' }}" required>
               <small class="text-muted">Aviso: Mover esta data para o futuro excluirá os registros anteriores.</small>
             </div>
+            <div class="mb-3">
+              <label class="form-label">Salário Mensal (Opcional)</label>
+              <input type="number" step="0.01" name="monthly_salary" class="form-control" value="{{ settings.monthly_salary if settings and settings.monthly_salary else '' }}" placeholder="Ex: 3500.00">
+              <small class="text-muted">Usado para exibir conversões estimadas em dinheiro.</small>
+            </div>
           </div>
           <div class="modal-footer">
             <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fechar</button>

@@ -50,6 +50,31 @@ def format_time_only(hours_float: float, with_sign=False):
 
     return f"{sign}{hours:02d}:{minutes:02d}"
 
+
+def format_money(hours_float: float, monthly_salary: float):
+    if not monthly_salary or monthly_salary <= 0:
+        return ""
+    if hours_float is None:
+        return ""
+
+    hourly_rate = monthly_salary / 220.0
+
+    if hours_float > 0:
+        money_value = hours_float * (hourly_rate * 1.5)
+    else:
+        # hours_float is <= 0
+        money_value = hours_float * hourly_rate
+
+    sign = "-" if money_value < 0 else ""
+    val = abs(money_value)
+
+    # Format as Brazilian Real (e.g., R$ 1.500,00)
+    val_str = f"{val:,.2f}"
+    # Replace comma with temporary character, dot with comma, and temporary with dot
+    val_str = val_str.replace(",", "X").replace(".", ",").replace("X", ".")
+
+    return f"{sign}R$ {val_str}"
+
 def ptbr_weekday(d):
     weekdays = ["Seg", "Ter", "Qua", "Qui", "Sex", "Sáb", "Dom"]
     return weekdays[d.weekday()]
@@ -70,6 +95,7 @@ def create_app():
 
     # Register template filters
     app.jinja_env.filters['format_balance'] = format_balance
+    app.jinja_env.filters['format_money'] = format_money
     app.jinja_env.filters['format_time'] = format_time_only
     app.jinja_env.filters['ptbr_weekday'] = ptbr_weekday
 

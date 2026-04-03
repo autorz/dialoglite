@@ -19,6 +19,17 @@ def update_settings():
         new_date_str = request.form.get('start_date')
         new_date = datetime.strptime(new_date_str, '%Y-%m-%d').date()
         set_start_date(new_date)
+
+        salary_str = request.form.get('monthly_salary')
+        if salary_str:
+            try:
+                salary = float(salary_str.replace(',', '.'))
+                settings = get_settings()
+                settings.monthly_salary = salary
+                db.session.commit()
+            except ValueError:
+                pass
+
         flash('Configurações atualizadas com sucesso!', 'success')
     except Exception as e:
         flash(f'Erro ao atualizar configurações: {e}', 'danger')

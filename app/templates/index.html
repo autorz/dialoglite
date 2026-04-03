@@ -8,7 +8,7 @@
     <div class="col-md-6 text-md-end mt-3 mt-md-0">
         <h4 class="mb-0">Saldo Atual:
             <span class="{{ 'positive' if current_balance >= 0 else 'negative' }}">
-                {{ current_balance | format_balance }}
+                <span title="{{ current_balance | format_money(settings.monthly_salary) }}">{{ current_balance | format_balance }}</span>
             </span>
         </h4>
     </div>
@@ -28,7 +28,7 @@
         <div class="card bg-light">
             <div class="card-body text-center">
                 <h6 class="card-title text-muted">Média Extras (30d)</h6>
-                <h4 class="card-text fw-bold">{{ stats.avg_30_days | format_time(True) }}</h4>
+                <h4 class="card-text fw-bold" title="{{ stats.avg_30_days | format_money(settings.monthly_salary) }}">{{ stats.avg_30_days | format_time(True) }}</h4>
             </div>
         </div>
     </div>
@@ -36,7 +36,7 @@
         <div class="card bg-light">
             <div class="card-body text-center">
                 <h6 class="card-title text-muted">Previsão (30d)</h6>
-                <h4 class="card-text fw-bold">{{ stats.forecast_30_days | format_time(True) }}</h4>
+                <h4 class="card-text fw-bold" title="{{ stats.forecast_30_days | format_money(settings.monthly_salary) }}">{{ stats.forecast_30_days | format_time(True) }}</h4>
             </div>
         </div>
     </div>
@@ -44,7 +44,7 @@
         <div class="card bg-light">
             <div class="card-body text-center">
                 <h6 class="card-title text-muted">Previsão (90d)</h6>
-                <h4 class="card-text fw-bold">{{ stats.forecast_90_days | format_time(True) }}</h4>
+                <h4 class="card-text fw-bold" title="{{ stats.forecast_90_days | format_money(settings.monthly_salary) }}">{{ stats.forecast_90_days | format_time(True) }}</h4>
             </div>
         </div>
     </div>
@@ -136,16 +136,16 @@
 
                 <td>{{ record.worked_hours | format_time }}</td>
                 <td>{{ record.expected_hours | format_time }}</td>
-                <td class="{{ 'text-success fw-bold' if record.daily_delta > 0 else 'text-danger fw-bold' if record.daily_delta < 0 else '' }}">
+                <td class="{{ 'text-success fw-bold' if record.daily_delta > 0 else 'text-danger fw-bold' if record.daily_delta < 0 else '' }}" title="{{ record.daily_delta | format_money(settings.monthly_salary) }}">
                     {{ record.daily_delta | format_time(True) }}
                 </td>
                 <td>
                     {% if record.override is not none %}
-                        <span class="badge bg-info text-dark" title="Ajuste Manual">
+                        <span class="badge bg-info text-dark" title="Ajuste Manual {{ '- ' + (record.balance | format_money(settings.monthly_salary)) if settings and settings.monthly_salary else '' }}">
                             {{ record.balance | format_balance }} *
                         </span>
                     {% else %}
-                        <strong>{{ record.balance | format_balance }}</strong>
+                        <strong title="{{ record.balance | format_money(settings.monthly_salary) }}">{{ record.balance | format_balance }}</strong>
                     {% endif %}
                 </td>
             </tr>
@@ -161,6 +161,8 @@
     document.addEventListener("DOMContentLoaded", function() {
         var ctx = document.getElementById('balanceChart').getContext('2d');
         var chartData = {{ stats.chart_data | tojson | safe }};
+        var monthlySalary = {{ settings.monthly_salary if settings and settings.monthly_salary else 0 | tojson | safe }};
+
 
         var labels = chartData.map(function(d) {
             var parts = d.date.split('-');
@@ -215,6 +217,26 @@
                                     let minutes = Math.floor((Math.abs(context.parsed.y) - hours) * 60);
                                     let sign = context.parsed.y < 0 ? '-' : '+';
                                     label += sign + String(hours).padStart(2, '0') + ':' + String(minutes).padStart(2, '0');
+
+                                    if (monthlySalary > 0) {
+                                        let hours_float = context.parsed.y;
+                                        let hourly_rate = monthlySalary / 220.0;
+                                        let money_value = 0;
+                                        if (hours_float > 0) {
+                                            money_value = hours_float * (hourly_rate * 1.5);
+                                        } else {
+                                            money_value = hours_float * hourly_rate;
+                                        }
+                                        let m_sign = money_value < 0 ? "-" : "";
+                                        let m_val = Math.abs(money_value).toFixed(2);
+                                        m_val = m_val.replace('.', ',');
+                                        // add thousands separator if needed
+                                        let parts = m_val.split(',');
+                                        parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+                                        m_val = parts.join(',');
+
+                                        label += ' (' + m_sign + 'R$ ' + m_val + ')';
+                                    }
                                 }
                                 return label;
                             }

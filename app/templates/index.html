@@ -8,7 +8,8 @@
     <div class="col-md-6 text-md-end mt-3 mt-md-0">
         <h4 class="mb-0">Saldo Atual:
             <span class="{{ 'positive' if current_balance >= 0 else 'negative' }}">
-                <span title="{{ current_balance | format_money(settings.monthly_salary) }}">{{ current_balance | format_balance }}</span>
+                <span title="{{ current_balance | format_money(settings.monthly_salary) }}">{{ current_balance |
+                    format_balance }}</span>
             </span>
         </h4>
     </div>
@@ -28,7 +29,8 @@
         <div class="card bg-light">
             <div class="card-body text-center">
                 <h6 class="card-title text-muted">Média Extras (30d)</h6>
-                <h4 class="card-text fw-bold" title="{{ stats.avg_30_days | format_money(settings.monthly_salary) }}">{{ stats.avg_30_days | format_time(True) }}</h4>
+                <h4 class="card-text fw-bold" title="{{ stats.avg_30_days | format_money(settings.monthly_salary) }}">{{
+                    stats.avg_30_days | format_time(True) }}</h4>
             </div>
         </div>
     </div>
@@ -36,7 +38,9 @@
         <div class="card bg-light">
             <div class="card-body text-center">
                 <h6 class="card-title text-muted">Previsão (30d)</h6>
-                <h4 class="card-text fw-bold" title="{{ stats.forecast_30_days | format_money(settings.monthly_salary) }}">{{ stats.forecast_30_days | format_time(True) }}</h4>
+                <h4 class="card-text fw-bold"
+                    title="{{ stats.forecast_30_days | format_money(settings.monthly_salary) }}">{{
+                    stats.forecast_30_days | format_balance(True) }}</h4>
             </div>
         </div>
     </div>
@@ -44,7 +48,9 @@
         <div class="card bg-light">
             <div class="card-body text-center">
                 <h6 class="card-title text-muted">Previsão (90d)</h6>
-                <h4 class="card-text fw-bold" title="{{ stats.forecast_90_days | format_money(settings.monthly_salary) }}">{{ stats.forecast_90_days | format_time(True) }}</h4>
+                <h4 class="card-text fw-bold"
+                    title="{{ stats.forecast_90_days | format_money(settings.monthly_salary) }}">{{
+                    stats.forecast_90_days | format_balance(True) }}</h4>
             </div>
         </div>
     </div>
@@ -77,75 +83,88 @@
         </thead>
         <tbody>
             {% for record in history %}
-            <tr class="{% if record.is_consolidated %}table-consolidated{% elif record.is_holiday or record.manual_holiday %}table-warning{% elif record.is_weekend %}table-light{% endif %}">
+            <tr
+                class="{% if record.is_consolidated %}table-consolidated{% elif record.is_holiday or record.manual_holiday %}table-warning{% elif record.is_weekend %}table-light{% endif %}">
                 <td>
                     <strong>{{ record.date.strftime('%d/%m/%Y') }}</strong><br>
                     <small class="text-muted">{{ record.date | ptbr_weekday }}</small><br>
-                    <a href="{{ url_for('main.day_edit', date_str=record.date) }}" class="btn btn-sm btn-outline-primary mt-1" style="font-size: 0.70rem; padding: 0.15rem 0.4rem;">Avançado</a>
+                    <a href="{{ url_for('main.day_edit', date_str=record.date) }}"
+                        class="btn btn-sm btn-outline-primary mt-1"
+                        style="font-size: 0.70rem; padding: 0.15rem 0.4rem;">Avançado</a>
                 </td>
                 <td>
                     {% if record.is_holiday or record.manual_holiday %}
-                        <span class="badge bg-warning text-dark">Feriado</span>
+                    <span class="badge bg-warning text-dark">Feriado</span>
                     {% elif record.is_weekend %}
-                        <span class="badge bg-secondary">Fim de Semana</span>
+                    <span class="badge bg-secondary">Fim de Semana</span>
                     {% else %}
-                        <span class="badge bg-success">Dia Útil</span>
+                    <span class="badge bg-success">Dia Útil</span>
                     {% endif %}
                 </td>
 
                 <td class="text-start">
                     {% if record.periods|length > 2 %}
-                        <div class="d-flex flex-column gap-1">
-                            {% for p in record.periods %}
-                                <div class="small fw-bold">
-                                    Período {{ loop.index }}: {{ p.entry_time.strftime('%H:%M') }} - {{ p.exit_time.strftime('%H:%M') if p.exit_time else '(trabalhando)' }}
-                                </div>
-                            {% endfor %}
-                            <small class="text-muted">Mais de 2 períodos. Use <strong>Avançado</strong> para modificar.</small>
+                    <div class="d-flex flex-column gap-1">
+                        {% for p in record.periods %}
+                        <div class="small fw-bold">
+                            Período {{ loop.index }}: {{ p.entry_time.strftime('%H:%M') }} - {{
+                            p.exit_time.strftime('%H:%M') if p.exit_time else '(trabalhando)' }}
                         </div>
+                        {% endfor %}
+                        <small class="text-muted">Mais de 2 períodos. Use <strong>Avançado</strong> para
+                            modificar.</small>
+                    </div>
                     {% else %}
-                        <!-- Inline Quick Form -->
-                        <form action="{{ url_for('main.day_quick_update', date_str=record.date) }}" method="POST" class="d-flex flex-column align-items-center gap-2 m-0 p-0">
-                            {% set p1 = record.periods[0] if record.periods|length > 0 else None %}
-                            {% set p2 = record.periods[1] if record.periods|length > 1 else None %}
+                    <!-- Inline Quick Form -->
+                    <form action="{{ url_for('main.day_quick_update', date_str=record.date) }}" method="POST"
+                        class="d-flex flex-column align-items-center gap-2 m-0 p-0">
+                        {% set p1 = record.periods[0] if record.periods|length > 0 else None %}
+                        {% set p2 = record.periods[1] if record.periods|length > 1 else None %}
 
-                            <div class="d-flex flex-wrap justify-content-center gap-2 w-100">
-                                <div class="input-group input-group-sm" style="max-width: 180px;">
-                                    <span class="input-group-text bg-light border-secondary">Ent.</span>
-                                    <input type="time" name="entry_time[]" class="form-control border-secondary text-center" value="{{ p1.entry_time.strftime('%H:%M') if p1 else '' }}">
-                                </div>
-                                <div class="input-group input-group-sm" style="max-width: 180px;">
-                                    <span class="input-group-text bg-light border-secondary">Saí.</span>
-                                    <input type="time" name="exit_time[]" class="form-control border-secondary text-center" value="{{ p1.exit_time.strftime('%H:%M') if p1 and p1.exit_time else '' }}">
-                                </div>
+                        <div class="d-flex flex-wrap justify-content-center gap-2 w-100">
+                            <div class="input-group input-group-sm" style="max-width: 180px;">
+                                <span class="input-group-text bg-light border-secondary">Ent.</span>
+                                <input type="time" name="entry_time[]" class="form-control border-secondary text-center"
+                                    value="{{ p1.entry_time.strftime('%H:%M') if p1 else '' }}">
                             </div>
-                            <div class="d-flex flex-wrap justify-content-center gap-2 w-100">
-                                <div class="input-group input-group-sm" style="max-width: 180px;">
-                                    <span class="input-group-text bg-light border-secondary">Ent.</span>
-                                    <input type="time" name="entry_time[]" class="form-control border-secondary text-center" value="{{ p2.entry_time.strftime('%H:%M') if p2 else '' }}">
-                                </div>
-                                <div class="input-group input-group-sm" style="max-width: 180px;">
-                                    <span class="input-group-text bg-light border-secondary">Saí.</span>
-                                    <input type="time" name="exit_time[]" class="form-control border-secondary text-center" value="{{ p2.exit_time.strftime('%H:%M') if p2 and p2.exit_time else '' }}">
-                                </div>
-                                <button type="submit" class="btn btn-sm btn-success">Salvar ✓</button>
+                            <div class="input-group input-group-sm" style="max-width: 180px;">
+                                <span class="input-group-text bg-light border-secondary">Saí.</span>
+                                <input type="time" name="exit_time[]" class="form-control border-secondary text-center"
+                                    value="{{ p1.exit_time.strftime('%H:%M') if p1 and p1.exit_time else '' }}">
                             </div>
-                        </form>
+                        </div>
+                        <div class="d-flex flex-wrap justify-content-center gap-2 w-100">
+                            <div class="input-group input-group-sm" style="max-width: 180px;">
+                                <span class="input-group-text bg-light border-secondary">Ent.</span>
+                                <input type="time" name="entry_time[]" class="form-control border-secondary text-center"
+                                    value="{{ p2.entry_time.strftime('%H:%M') if p2 else '' }}">
+                            </div>
+                            <div class="input-group input-group-sm" style="max-width: 180px;">
+                                <span class="input-group-text bg-light border-secondary">Saí.</span>
+                                <input type="time" name="exit_time[]" class="form-control border-secondary text-center"
+                                    value="{{ p2.exit_time.strftime('%H:%M') if p2 and p2.exit_time else '' }}">
+                            </div>
+                            <button type="submit" class="btn btn-sm btn-success">Salvar ✓</button>
+                        </div>
+                    </form>
                     {% endif %}
                 </td>
 
                 <td>{{ record.worked_hours | format_time }}</td>
                 <td>{{ record.expected_hours | format_time }}</td>
-                <td class="{{ 'text-success fw-bold' if record.daily_delta > 0 else 'text-danger fw-bold' if record.daily_delta < 0 else '' }}" title="{{ record.daily_delta | format_money(settings.monthly_salary) }}">
+                <td class="{{ 'text-success fw-bold' if record.daily_delta > 0 else 'text-danger fw-bold' if record.daily_delta < 0 else '' }}"
+                    title="{{ record.daily_delta | format_money(settings.monthly_salary) }}">
                     {{ record.daily_delta | format_time(True) }}
                 </td>
                 <td>
                     {% if record.override is not none %}
-                        <span class="badge bg-info text-dark" title="Ajuste Manual {{ '- ' + (record.balance | format_money(settings.monthly_salary)) if settings and settings.monthly_salary else '' }}">
-                            {{ record.balance | format_balance }} *
-                        </span>
+                    <span class="badge bg-info text-dark"
+                        title="Ajuste Manual {{ '- ' + (record.balance | format_money(settings.monthly_salary)) if settings and settings.monthly_salary else '' }}">
+                        {{ record.balance | format_balance }} *
+                    </span>
                     {% else %}
-                        <strong title="{{ record.balance | format_money(settings.monthly_salary) }}">{{ record.balance | format_balance }}</strong>
+                    <strong title="{{ record.balance | format_money(settings.monthly_salary) }}">{{ record.balance |
+                        format_balance }}</strong>
                     {% endif %}
                 </td>
             </tr>
@@ -158,93 +177,94 @@
 {% block scripts %}
 <script src="{{ url_for('static', filename='js/chart.umd.js') }}"></script>
 <script>
-    document.addEventListener("DOMContentLoaded", function() {
+    document.addEventListener("DOMContentLoaded", function () {
         var ctx = document.getElementById('balanceChart').getContext('2d');
-        var chartData = {{ stats.chart_data | tojson | safe }};
-        var monthlySalary = {{ settings.monthly_salary if settings and settings.monthly_salary else 0 | tojson | safe }};
+        var chartData = {{ stats.chart_data | tojson | safe
+    }};
+    var monthlySalary = {{ settings.monthly_salary if settings and settings.monthly_salary else 0 | tojson | safe }};
 
 
-        var labels = chartData.map(function(d) {
-            var parts = d.date.split('-');
-            return parts[2] + '/' + parts[1]; // DD/MM format
-        });
-        var balances = chartData.map(function(d) { return d.balance; });
-        var movingAverages = chartData.map(function(d) { return d.moving_avg_7; });
+    var labels = chartData.map(function (d) {
+        var parts = d.date.split('-');
+        return parts[2] + '/' + parts[1]; // DD/MM format
+    });
+    var balances = chartData.map(function (d) { return d.balance; });
+    var movingAverages = chartData.map(function (d) { return d.moving_avg_7; });
 
-        var chart = new Chart(ctx, {
-            type: 'line',
-            data: {
-                labels: labels,
-                datasets: [{
-                    label: 'Saldo Acumulado',
-                    data: balances,
-                    borderColor: 'rgba(54, 162, 235, 1)',
-                    backgroundColor: 'rgba(54, 162, 235, 0.1)',
-                    borderWidth: 2,
-                    fill: true,
-                    tension: 0.1
-                }, {
-                    label: 'Média Móvel (7d)',
-                    data: movingAverages,
-                    borderColor: 'rgba(255, 99, 132, 1)',
-                    borderWidth: 2,
-                    borderDash: [5, 5],
-                    fill: false,
-                    tension: 0.1
-                }]
-            },
-            options: {
-                responsive: true,
-                scales: {
-                    y: {
-                        title: {
-                            display: true,
-                            text: 'Horas'
-                        }
+    var chart = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: labels,
+            datasets: [{
+                label: 'Saldo Acumulado',
+                data: balances,
+                borderColor: 'rgba(54, 162, 235, 1)',
+                backgroundColor: 'rgba(54, 162, 235, 0.1)',
+                borderWidth: 2,
+                fill: true,
+                tension: 0.1
+            }, {
+                label: 'Média Móvel (7d)',
+                data: movingAverages,
+                borderColor: 'rgba(255, 99, 132, 1)',
+                borderWidth: 2,
+                borderDash: [5, 5],
+                fill: false,
+                tension: 0.1
+            }]
+        },
+        options: {
+            responsive: true,
+            scales: {
+                y: {
+                    title: {
+                        display: true,
+                        text: 'Horas'
                     }
-                },
-                plugins: {
-                    tooltip: {
-                        callbacks: {
-                            label: function(context) {
-                                let label = context.dataset.label || '';
-                                if (label) {
-                                    label += ': ';
-                                }
-                                if (context.parsed.y !== null) {
-                                    // Format hours to HH:MM format manually
-                                    let hours = Math.floor(Math.abs(context.parsed.y));
-                                    let minutes = Math.floor((Math.abs(context.parsed.y) - hours) * 60);
-                                    let sign = context.parsed.y < 0 ? '-' : '+';
-                                    label += sign + String(hours).padStart(2, '0') + ':' + String(minutes).padStart(2, '0');
-
-                                    if (monthlySalary > 0) {
-                                        let hours_float = context.parsed.y;
-                                        let hourly_rate = monthlySalary / 220.0;
-                                        let money_value = 0;
-                                        if (hours_float > 0) {
-                                            money_value = hours_float * (hourly_rate * 1.5);
-                                        } else {
-                                            money_value = hours_float * hourly_rate;
-                                        }
-                                        let m_sign = money_value < 0 ? "-" : "";
-                                        let m_val = Math.abs(money_value).toFixed(2);
-                                        m_val = m_val.replace('.', ',');
-                                        // add thousands separator if needed
-                                        let parts = m_val.split(',');
-                                        parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ".");
-                                        m_val = parts.join(',');
-
-                                        label += ' (' + m_sign + 'R$ ' + m_val + ')';
-                                    }
-                                }
-                                return label;
+                }
+            },
+            plugins: {
+                tooltip: {
+                    callbacks: {
+                        label: function (context) {
+                            let label = context.dataset.label || '';
+                            if (label) {
+                                label += ': ';
                             }
+                            if (context.parsed.y !== null) {
+                                // Format hours to HH:MM format manually
+                                let hours = Math.floor(Math.abs(context.parsed.y));
+                                let minutes = Math.floor((Math.abs(context.parsed.y) - hours) * 60);
+                                let sign = context.parsed.y < 0 ? '-' : '+';
+                                label += sign + String(hours).padStart(2, '0') + ':' + String(minutes).padStart(2, '0');
+
+                                if (monthlySalary > 0) {
+                                    let hours_float = context.parsed.y;
+                                    let hourly_rate = monthlySalary / 220.0;
+                                    let money_value = 0;
+                                    if (hours_float > 0) {
+                                        money_value = hours_float * (hourly_rate * 1.5);
+                                    } else {
+                                        money_value = hours_float * hourly_rate;
+                                    }
+                                    let m_sign = money_value < 0 ? "-" : "";
+                                    let m_val = Math.abs(money_value).toFixed(2);
+                                    m_val = m_val.replace('.', ',');
+                                    // add thousands separator if needed
+                                    let parts = m_val.split(',');
+                                    parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+                                    m_val = parts.join(',');
+
+                                    label += ' (' + m_sign + 'R$ ' + m_val + ')';
+                                }
+                            }
+                            return label;
                         }
                     }
                 }
             }
-        });
+        }
+    });
     });
 </script>
 {% endblock %}

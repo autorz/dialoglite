@@ -66,11 +66,23 @@
             <div class="mb-3">
               <label class="form-label">Salário Mensal (Opcional)</label>
               <input type="number" step="0.01" id="monthly_salary_input" class="form-control" value="" placeholder="Ex: 3500.00">
-              <div class="alert alert-info py-2 px-3 mt-2" style="font-size: 0.85rem;">
-                <i class="bi bi-info-circle me-1"></i>
-                Este dado é salvo <strong>apenas no seu navegador</strong> para sua privacidade. 
-                Ele não será sincronizado automaticamente e deve ser configurado manualmente em outros dispositivos.
+            </div>
+            <div class="mb-3">
+              <label class="form-label">Horas Mensais (Padrão)</label>
+              <select id="monthly_hours_select" class="form-select">
+                <option value="220">220 horas</option>
+                <option value="200">200 horas</option>
+                <option value="176">176 horas</option>
+                <option value="custom">Outro valor...</option>
+              </select>
+              <div id="custom_hours_container" class="mt-2 d-none">
+                <input type="number" step="0.1" id="monthly_hours_custom" class="form-control" placeholder="Digite o valor (ex: 160)">
               </div>
+            </div>
+            <div class="alert alert-info py-2 px-3 mt-2" style="font-size: 0.85rem;">
+              <i class="bi bi-info-circle me-1"></i>
+              Estes dados são salvos <strong>apenas no seu navegador</strong> para sua privacidade. 
+              Eles não serão sincronizados automaticamente e devem ser configurados manualmente em outros dispositivos.
             </div>
           </div>
           <div class="modal-footer">
@@ -89,7 +101,22 @@
 <script>
   document.addEventListener('DOMContentLoaded', function() {
     const salaryInput = document.getElementById('monthly_salary_input');
+    const hoursSelect = document.getElementById('monthly_hours_select');
+    const hoursCustomInput = document.getElementById('monthly_hours_custom');
+    const customHoursContainer = document.getElementById('custom_hours_container');
     const settingsForm = document.querySelector('#settingsModal form');
+
+    function toggleCustomHours() {
+      if (hoursSelect.value === 'custom') {
+        customHoursContainer.classList.remove('d-none');
+      } else {
+        customHoursContainer.classList.add('d-none');
+      }
+    }
+
+    if (hoursSelect) {
+      hoursSelect.addEventListener('change', toggleCustomHours);
+    }
 
     // Load from localStorage
     const savedSalary = localStorage.getItem('monthly_salary');
@@ -97,11 +124,29 @@
       salaryInput.value = savedSalary;
     }
 
+    const savedHours = localStorage.getItem('monthly_hours') || '220';
+    if (hoursSelect) {
+      if (['220', '200', '176'].includes(savedHours)) {
+        hoursSelect.value = savedHours;
+      } else {
+        hoursSelect.value = 'custom';
+        if (hoursCustomInput) hoursCustomInput.value = savedHours;
+        toggleCustomHours();
+      }
+    }
+
     // Save to localStorage when form is submitted
     if (settingsForm) {
       settingsForm.addEventListener('submit', function() {
         if (salaryInput) {
           localStorage.setItem('monthly_salary', salaryInput.value);
+        }
+        if (hoursSelect) {
+          let hours = hoursSelect.value;
+          if (hours === 'custom' && hoursCustomInput) {
+            hours = hoursCustomInput.value;
+          }
+          localStorage.setItem('monthly_hours', hours);
         }
       });
     }

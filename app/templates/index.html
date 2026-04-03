@@ -284,6 +284,7 @@
         var ctx = document.getElementById('balanceChart').getContext('2d');
         var chartData = {{ stats.chart_data | tojson | safe }};
         var monthlySalary = parseFloat(localStorage.getItem('monthly_salary')) || 0;
+        var monthlyHours = parseFloat(localStorage.getItem('monthly_hours')) || 220.0;
 
 
         var labels = chartData.map(function (d) {
@@ -342,7 +343,7 @@
 
                                     if (monthlySalary > 0) {
                                         let hours_float = context.parsed.y;
-                                        let hourly_rate = monthlySalary / 220.0;
+                                        let hourly_rate = monthlySalary / monthlyHours;
                                         let money_value = 0;
                                         if (hours_float > 0) {
                                             money_value = hours_float * (hourly_rate * 1.5);
@@ -371,9 +372,10 @@
         // Initialize money tooltips
         function updateMoneyTooltips() {
             const salary = parseFloat(localStorage.getItem('monthly_salary')) || 0;
+            const monthlyHours = parseFloat(localStorage.getItem('monthly_hours')) || 220.0;
             if (salary <= 0) return;
 
-            const hourlyRate = salary / 220.0;
+            const hourlyRate = salary / monthlyHours;
             const tooltips = document.querySelectorAll('.money-tooltip');
 
             tooltips.forEach(el => {

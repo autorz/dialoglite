@@ -166,7 +166,7 @@ def get_history_with_balances() -> Tuple[List[dict], float]:
     return history, running_balance
 
 
-def get_dashboard_stats(history: List[dict]) -> dict:
+def get_dashboard_stats(history: List[dict], current_balance: float) -> dict:
     today = date.today()
 
     # 1. Gather workdays extras
@@ -216,8 +216,8 @@ def get_dashboard_stats(history: List[dict]) -> dict:
             if i <= 90:
                 future_90_workdays += 1
 
-    forecast_30_days = future_30_workdays * avg_30_days
-    forecast_90_days = future_90_workdays * avg_30_days
+    forecast_30_days = current_balance + (future_30_workdays * avg_30_days)
+    forecast_90_days = current_balance + (future_90_workdays * avg_30_days)
 
     # 3. Chart data (last 90 days, ascending)
     chart_data = []

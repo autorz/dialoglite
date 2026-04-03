@@ -10,7 +10,7 @@ def index():
     auto_populate_days()
     settings = get_settings()
     history, current_balance = get_history_with_balances()
-    stats = get_dashboard_stats(history)
+    stats = get_dashboard_stats(history, current_balance)
     return render_template('index.html', history=history, current_balance=current_balance, settings=settings, stats=stats)
 
 @bp.route('/settings', methods=['POST'])

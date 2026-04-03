@@ -74,8 +74,18 @@ body {
 .table .table-warning > td {
   background-color: rgba(249, 226, 175, 0.1) !important; /* Yellow tint */
 }
+.table-hover .table-warning:hover > td {
+  background-color: rgba(249, 226, 175, 0.1) !important;
+  box-shadow: none !important;
+  --bs-table-accent-bg: transparent !important;
+}
 .table .table-light > td {
   background-color: var(--ctp-surface0) !important; /* Weekend */
+}
+.table-hover .table-light:hover > td {
+  background-color: var(--ctp-surface0) !important;
+  box-shadow: none !important;
+  --bs-table-accent-bg: transparent !important;
 }
 
 /* Inputs */
@@ -142,4 +152,9 @@ input[type="time"]::-webkit-calendar-picker-indicator {
 /* Consolidated Row Color */
 .table .table-consolidated > td {
   background-color: rgba(137, 180, 250, 0.1) !important; /* Blue tint */
+}
+.table-hover .table-consolidated:hover > td {
+  background-color: rgba(137, 180, 250, 0.1) !important;
+  box-shadow: none !important;
+  --bs-table-accent-bg: transparent !important;
 }

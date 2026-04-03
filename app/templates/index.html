@@ -36,7 +36,7 @@
         <div class="card bg-light">
             <div class="card-body text-center">
                 <h6 class="card-title text-muted">Previsão (30d)</h6>
-                <h4 class="card-text fw-bold">{{ stats.forecast_30_days | format_time(True) }}</h4>
+                <h4 class="card-text fw-bold">{{ stats.forecast_30_days | format_balance(True) }}</h4>
             </div>
         </div>
     </div>
@@ -44,7 +44,7 @@
         <div class="card bg-light">
             <div class="card-body text-center">
                 <h6 class="card-title text-muted">Previsão (90d)</h6>
-                <h4 class="card-text fw-bold">{{ stats.forecast_90_days | format_time(True) }}</h4>
+                <h4 class="card-text fw-bold">{{ stats.forecast_90_days | format_balance(True) }}</h4>
             </div>
         </div>
     </div>

@@ -56,7 +56,7 @@ def format_time_only(hours_float: float, with_sign=False):
     return f"{sign}{hours:02d}:{minutes:02d}"
 
 
-def format_money(hours_float: float, monthly_salary: float):
+def format_money(hours_float: float, monthly_salary: float, expected_hours: float = None):
     if not monthly_salary or monthly_salary <= 0:
         return ""
     if hours_float is None:
@@ -64,11 +64,18 @@ def format_money(hours_float: float, monthly_salary: float):
 
     hourly_rate = monthly_salary / 220.0
 
-    if hours_float > 0:
-        money_value = hours_float * (hourly_rate * 1.5)
+    if expected_hours is not None:
+        # Calculate money for worked hours: 1.0x up to expected, 1.5x for excess
+        base_hours = min(hours_float, expected_hours)
+        extra_hours = max(0.0, hours_float - expected_hours)
+        money_value = (base_hours * hourly_rate) + (extra_hours * hourly_rate * 1.5)
     else:
-        # hours_float is <= 0
-        money_value = hours_float * hourly_rate
+        # Default logic for deltas/balances: 1.5x for positive, 1.0x for negative
+        if hours_float > 0:
+            money_value = hours_float * (hourly_rate * 1.5)
+        else:
+            # hours_float is <= 0
+            money_value = hours_float * hourly_rate
 
     sign = "-" if money_value < 0 else ""
     val = abs(money_value)

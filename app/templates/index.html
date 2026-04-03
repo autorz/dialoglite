@@ -151,9 +151,9 @@
                     {% endif %}
                 </td>
 
-                <td title="{{ record.worked_hours | format_money(settings.monthly_salary) }}">{{ record.worked_hours |
+                <td title="{{ record.worked_hours | format_money(settings.monthly_salary, record.expected_hours) }}">{{ record.worked_hours |
                     format_time }}</td>
-                <td title="{{ record.expected_hours | format_money(settings.monthly_salary) }}">{{ record.expected_hours
+                <td title="{{ record.expected_hours | format_money(settings.monthly_salary, record.expected_hours) }}">{{ record.expected_hours
                     | format_time }}</td>
                     <td class="daily-delta-cell fw-bold" data-value="{{ record.daily_delta }}"
                         data-date="{{ record.date.strftime('%Y-%m-%d') }}"

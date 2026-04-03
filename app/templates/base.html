@@ -65,8 +65,12 @@
             </div>
             <div class="mb-3">
               <label class="form-label">Salário Mensal (Opcional)</label>
-              <input type="number" step="0.01" name="monthly_salary" class="form-control" value="{{ settings.monthly_salary if settings and settings.monthly_salary else '' }}" placeholder="Ex: 3500.00">
-              <small class="text-muted">Usado para exibir conversões estimadas em dinheiro.</small>
+              <input type="number" step="0.01" id="monthly_salary_input" class="form-control" value="" placeholder="Ex: 3500.00">
+              <div class="alert alert-info py-2 px-3 mt-2" style="font-size: 0.85rem;">
+                <i class="bi bi-info-circle me-1"></i>
+                Este dado é salvo <strong>apenas no seu navegador</strong> para sua privacidade. 
+                Ele não será sincronizado automaticamente e deve ser configurado manualmente em outros dispositivos.
+              </div>
             </div>
           </div>
           <div class="modal-footer">
@@ -81,6 +85,28 @@
 <!-- Use local Bootstrap JS -->
 <script src="{{ url_for('static', filename='js/bootstrap.bundle.min.js') }}"></script>
 {% block scripts %}{% endblock %}
+
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+    const salaryInput = document.getElementById('monthly_salary_input');
+    const settingsForm = document.querySelector('#settingsModal form');
+
+    // Load from localStorage
+    const savedSalary = localStorage.getItem('monthly_salary');
+    if (savedSalary && salaryInput) {
+      salaryInput.value = savedSalary;
+    }
+
+    // Save to localStorage when form is submitted
+    if (settingsForm) {
+      settingsForm.addEventListener('submit', function() {
+        if (salaryInput) {
+          localStorage.setItem('monthly_salary', salaryInput.value);
+        }
+      });
+    }
+  });
+</script>
 
 </body>
 </html>

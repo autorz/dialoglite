@@ -8,7 +8,7 @@
     <div class="col-md-6 text-md-end mt-3 mt-md-0">
         <h4 class="mb-0">Saldo Atual:
             <span class="{{ 'positive' if current_balance >= 0 else 'negative' }}">
-                <span title="{{ current_balance | format_money(settings.monthly_salary) }}">{{ current_balance |
+                <span class="money-tooltip" data-hours="{{ current_balance }}">{{ current_balance |
                     format_balance }}</span>
             </span>
         </h4>
@@ -21,7 +21,7 @@
         <div class="card bg-light">
             <div class="card-body text-center">
                 <h6 class="card-title text-muted">Média Extras (7d)</h6>
-                <h4 class="card-text fw-bold" title="{{ stats.avg_7_days | format_money(settings.monthly_salary) }}">{{
+                <h4 class="card-text fw-bold money-tooltip" data-hours="{{ stats.avg_7_days }}">{{
                     stats.avg_7_days | format_time(True) }}</h4>
             </div>
         </div>
@@ -30,7 +30,7 @@
         <div class="card bg-light">
             <div class="card-body text-center">
                 <h6 class="card-title text-muted">Média Extras (30d)</h6>
-                <h4 class="card-text fw-bold" title="{{ stats.avg_30_days | format_money(settings.monthly_salary) }}">{{
+                <h4 class="card-text fw-bold money-tooltip" data-hours="{{ stats.avg_30_days }}">{{
                     stats.avg_30_days | format_time(True) }}</h4>
             </div>
         </div>
@@ -39,8 +39,8 @@
         <div class="card bg-light">
             <div class="card-body text-center">
                 <h6 class="card-title text-muted">Previsão Total (30d)</h6>
-                <h4 class="card-text fw-bold {{ 'positive' if stats.forecast_30_days >= 0 else 'negative' }}"
-                    title="{{ stats.forecast_30_days | format_money(settings.monthly_salary) }}">{{
+                <h4 class="card-text fw-bold money-tooltip {{ 'positive' if stats.forecast_30_days >= 0 else 'negative' }}"
+                    data-hours="{{ stats.forecast_30_days }}">{{
                     stats.forecast_30_days | format_balance }}</h4>
             </div>
         </div>
@@ -49,8 +49,8 @@
         <div class="card bg-light">
             <div class="card-body text-center">
                 <h6 class="card-title text-muted">Previsão Total (90d)</h6>
-                <h4 class="card-text fw-bold {{ 'positive' if stats.forecast_90_days >= 0 else 'negative' }}"
-                    title="{{ stats.forecast_90_days | format_money(settings.monthly_salary) }}">{{
+                <h4 class="card-text fw-bold money-tooltip {{ 'positive' if stats.forecast_90_days >= 0 else 'negative' }}"
+                    data-hours="{{ stats.forecast_90_days }}">{{
                     stats.forecast_90_days | format_balance }}</h4>
             </div>
         </div>
@@ -151,24 +151,25 @@
                     {% endif %}
                 </td>
 
-                <td title="{{ record.worked_hours | format_money(settings.monthly_salary, record.expected_hours) }}">{{ record.worked_hours |
+                <td class="money-tooltip" data-hours="{{ record.worked_hours }}" data-expected="{{ record.expected_hours }}">{{ record.worked_hours |
                     format_time }}</td>
-                <td title="{{ record.expected_hours | format_money(settings.monthly_salary, record.expected_hours) }}">{{ record.expected_hours
+                <td class="money-tooltip" data-hours="{{ record.expected_hours }}" data-expected="{{ record.expected_hours }}">{{ record.expected_hours
                     | format_time }}</td>
-                    <td class="daily-delta-cell fw-bold" data-value="{{ record.daily_delta }}"
+                    <td class="daily-delta-cell fw-bold money-tooltip" data-value="{{ record.daily_delta }}"
                         data-date="{{ record.date.strftime('%Y-%m-%d') }}"
-                        title="{{ record.daily_delta | format_money(settings.monthly_salary) }}">
+                        data-hours="{{ record.daily_delta }}">
                         {{ record.daily_delta | format_time(True) }}
                     </td>
                 <td class="accumulated-balance-cell fw-bold" data-value="{{ record.balance }}"
                     data-date="{{ record.date.strftime('%Y-%m-%d') }}">
                     {% if record.override is not none %}
-                    <span class="badge bg-info text-dark" title="Ajuste Manual {{ '- ' + (record.balance | format_money(settings.monthly_salary)) if settings and settings.monthly_salary else '' }}"
+                    <span class="badge bg-info text-dark money-tooltip" 
+                        data-hours="{{ record.balance }}"
                         style="color: inherit !important;">
                         {{ record.balance | format_balance }} *
                     </span>
                     {% else %}
-                    <span title="{{ record.balance | format_money(settings.monthly_salary) }}">{{ record.balance |
+                    <span class="money-tooltip" data-hours="{{ record.balance }}">{{ record.balance |
                         format_balance }}</span>
                     {% endif %}
                 </td>
@@ -282,7 +283,7 @@
 
         var ctx = document.getElementById('balanceChart').getContext('2d');
         var chartData = {{ stats.chart_data | tojson | safe }};
-        var monthlySalary = {{ settings.monthly_salary if settings and settings.monthly_salary else 0 | tojson | safe }};
+        var monthlySalary = parseFloat(localStorage.getItem('monthly_salary')) || 0;
 
 
         var labels = chartData.map(function (d) {
@@ -366,6 +367,44 @@
                 }
             }
         });
+
+        // Initialize money tooltips
+        function updateMoneyTooltips() {
+            const salary = parseFloat(localStorage.getItem('monthly_salary')) || 0;
+            if (salary <= 0) return;
+
+            const hourlyRate = salary / 220.0;
+            const tooltips = document.querySelectorAll('.money-tooltip');
+
+            tooltips.forEach(el => {
+                const hours = parseFloat(el.getAttribute('data-hours'));
+                const expected = el.getAttribute('data-expected') ? parseFloat(el.getAttribute('data-expected')) : null;
+                
+                let moneyValue = 0;
+                if (expected !== null) {
+                    const baseHours = Math.min(hours, expected);
+                    const extraHours = Math.max(0.0, hours - expected);
+                    moneyValue = (baseHours * hourlyRate) + (extraHours * hourlyRate * 1.5);
+                } else {
+                    if (hours > 0) {
+                        moneyValue = hours * (hourlyRate * 1.5);
+                    } else {
+                        moneyValue = hours * hourlyRate;
+                    }
+                }
+
+                const sign = moneyValue < 0 ? "-" : "";
+                const val = Math.abs(moneyValue).toFixed(2);
+                let parts = val.replace('.', ',').split(',');
+                parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+                const formattedMoney = sign + "R$ " + parts.join(',');
+                
+                const prefix = el.classList.contains('badge') ? "Ajuste Manual - " : "";
+                el.setAttribute('title', prefix + formattedMoney);
+            });
+        }
+
+        updateMoneyTooltips();
     });
 </script>
 {% endblock %}

@@ -1,58 +1,73 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
+
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Controle de Ponto</title>
-    <!-- Use local Bootstrap CSS -->
-    <link href="{{ url_for('static', filename='css/bootstrap.min.css') }}" rel="stylesheet">
-    <!-- Optional custom css -->
-    <style>
-        .weekend { background-color: #f8f9fa; }
-        .holiday { background-color: #ffeeba; }
-        .negative { color: #dc3545; font-weight: bold; }
-        .positive { color: #198754; font-weight: bold; }
-    </style>
-    <link href="{{ url_for('static', filename='css/catppuccin.css') }}" rel="stylesheet">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dia Log Lite</title>
+  <!-- Use local Bootstrap CSS -->
+  <link href="{{ url_for('static', filename='css/bootstrap.min.css') }}" rel="stylesheet">
+  <!-- Optional custom css -->
+  <style>
+    .weekend {
+      background-color: #f8f9fa;
+    }
+
+    .holiday {
+      background-color: #ffeeba;
+    }
+
+    .negative {
+      color: #dc3545;
+      font-weight: bold;
+    }
+
+    .positive {
+      color: #198754;
+      font-weight: bold;
+    }
+  </style>
+  <link href="{{ url_for('static', filename='css/catppuccin.css') }}" rel="stylesheet">
 </head>
+
 <body>
 
-<nav class="navbar navbar-expand-lg navbar-dark bg-dark">
-  <div class="container">
-    <a class="navbar-brand" href="{{ url_for('main.index') }}">Controle de Ponto</a>
-    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
-      <span class="navbar-toggler-icon"></span>
-    </button>
-    <div class="collapse navbar-collapse" id="navbarNav">
-      <ul class="navbar-nav ms-auto">
-        <li class="nav-item">
-          <a class="nav-link" href="#" data-bs-toggle="modal" data-bs-target="#settingsModal">Configurações</a>
-        </li>
-      </ul>
+  <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+    <div class="container">
+      <a class="navbar-brand" href="{{ url_for('main.index') }}">Dia Log Lite</a>
+      <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+        <span class="navbar-toggler-icon"></span>
+      </button>
+      <div class="collapse navbar-collapse" id="navbarNav">
+        <ul class="navbar-nav ms-auto">
+          <li class="nav-item">
+            <a class="nav-link" href="#" data-bs-toggle="modal" data-bs-target="#settingsModal">Configurações</a>
+          </li>
+        </ul>
+      </div>
     </div>
-  </div>
-</nav>
+  </nav>
 
-<div class="container mt-4">
+  <div class="container mt-4">
     {% with messages = get_flashed_messages(with_categories=true) %}
-      {% if messages %}
-        {% for category, message in messages %}
-          <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
-            {{ message }}
-            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Fechar"></button>
-          </div>
-        {% endfor %}
-      {% endif %}
+    {% if messages %}
+    {% for category, message in messages %}
+    <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+      {{ message }}
+      <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Fechar"></button>
+    </div>
+    {% endfor %}
+    {% endif %}
     {% endwith %}
 
     {% block content %}{% endblock %}
-</div>
+  </div>
 
-<!-- Settings Modal -->
-<div class="modal fade" id="settingsModal" tabindex="-1">
-  <div class="modal-dialog">
-    <div class="modal-content">
-      <form action="{{ url_for('main.update_settings') }}" method="POST">
+  <!-- Settings Modal -->
+  <div class="modal fade" id="settingsModal" tabindex="-1">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <form action="{{ url_for('main.update_settings') }}" method="POST">
           <div class="modal-header">
             <h5 class="modal-title">Configurações</h5>
             <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
@@ -60,12 +75,15 @@
           <div class="modal-body">
             <div class="mb-3">
               <label class="form-label">Data de Início do Histórico</label>
-              <input type="date" name="start_date" class="form-control" value="{{ settings.start_date if settings else '2026-01-01' }}" required>
+              <input type="date" name="start_date" class="form-control"
+                value="{{ settings.start_date if settings else '2026-01-01' }}" required>
               <small class="text-muted">Aviso: Mover esta data para o futuro excluirá os registros anteriores.</small>
             </div>
             <div class="mb-3">
               <label class="form-label">Salário Mensal (Opcional)</label>
-              <input type="number" step="0.01" name="monthly_salary" class="form-control" value="{{ settings.monthly_salary if settings and settings.monthly_salary else '' }}" placeholder="Ex: 3500.00">
+              <input type="number" step="0.01" name="monthly_salary" class="form-control"
+                value="{{ settings.monthly_salary if settings and settings.monthly_salary else '' }}"
+                placeholder="Ex: 3500.00">
               <small class="text-muted">Usado para exibir conversões estimadas em dinheiro.</small>
             </div>
           </div>
@@ -73,14 +91,15 @@
             <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fechar</button>
             <button type="submit" class="btn btn-primary">Salvar alterações</button>
           </div>
-      </form>
+        </form>
+      </div>
     </div>
   </div>
-</div>
 
-<!-- Use local Bootstrap JS -->
-<script src="{{ url_for('static', filename='js/bootstrap.bundle.min.js') }}"></script>
-{% block scripts %}{% endblock %}
+  <!-- Use local Bootstrap JS -->
+  <script src="{{ url_for('static', filename='js/bootstrap.bundle.min.js') }}"></script>
+  {% block scripts %}{% endblock %}
 
 </body>
+
 </html>

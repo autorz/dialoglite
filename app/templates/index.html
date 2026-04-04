@@ -16,42 +16,58 @@
 </div>
 
 
+<div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-end mb-3">
+    <div></div>
+    <div class="btn-group btn-group-sm mt-2 mt-md-0 shadow-sm" role="group">
+        <input type="radio" class="btn-check" name="btnradio_stats" id="btn_stats_7d" autocomplete="off" checked>
+        <label class="btn btn-outline-secondary" for="btn_stats_7d">Base 7d</label>
+    
+        <input type="radio" class="btn-check" name="btnradio_stats" id="btn_stats_30d" autocomplete="off">
+        <label class="btn btn-outline-secondary" for="btn_stats_30d">Base 30d</label>
+
+        <input type="radio" class="btn-check" name="btnradio_stats" id="btn_stats_90d" autocomplete="off">
+        <label class="btn btn-outline-secondary" for="btn_stats_90d">Base 90d</label>
+    </div>
+</div>
+
 <div class="row mb-4">
-    <div class="col-md-3">
-        <div class="card bg-light">
-            <div class="card-body text-center">
-                <h6 class="card-title text-muted">Média Extras (7d)</h6>
-                <h4 class="card-text fw-bold money-tooltip" data-hours="{{ stats.avg_7_days }}">{{
-                    stats.avg_7_days | format_time(True) }}</h4>
+    <div class="col-12 col-md mb-3 mb-md-0">
+        <div class="card bg-light h-100">
+            <div class="card-body text-center align-content-center">
+                <h6 class="card-title text-muted title-stat mb-1" style="font-size: 0.9rem;">Média Chegada (7d)</h6>
+                <h4 class="card-text fw-bold mb-0 stat-7d" style="font-size: 1.25rem;">{{ stats.stats_7d.arrival_str }}</h4>
+                <h4 class="card-text fw-bold mb-0 stat-30d d-none" style="font-size: 1.25rem;">{{ stats.stats_30d.arrival_str }}</h4>
+                <h4 class="card-text fw-bold mb-0 stat-90d d-none" style="font-size: 1.25rem;">{{ stats.stats_90d.arrival_str }}</h4>
             </div>
         </div>
     </div>
-    <div class="col-md-3">
-        <div class="card bg-light">
-            <div class="card-body text-center">
-                <h6 class="card-title text-muted">Média Extras (30d)</h6>
-                <h4 class="card-text fw-bold money-tooltip" data-hours="{{ stats.avg_30_days }}">{{
-                    stats.avg_30_days | format_time(True) }}</h4>
+    <div class="col-12 col-md mb-3 mb-md-0">
+        <div class="card bg-light h-100">
+            <div class="card-body text-center align-content-center">
+                <h6 class="card-title text-muted title-stat mb-1" style="font-size: 0.9rem;">Média Saída (7d)</h6>
+                <h4 class="card-text fw-bold mb-0 stat-7d" style="font-size: 1.25rem;">{{ stats.stats_7d.departure_str }}</h4>
+                <h4 class="card-text fw-bold mb-0 stat-30d d-none" style="font-size: 1.25rem;">{{ stats.stats_30d.departure_str }}</h4>
+                <h4 class="card-text fw-bold mb-0 stat-90d d-none" style="font-size: 1.25rem;">{{ stats.stats_90d.departure_str }}</h4>
             </div>
         </div>
     </div>
-    <div class="col-md-3">
-        <div class="card bg-light">
-            <div class="card-body text-center">
-                <h6 class="card-title text-muted">Previsão Total (30d)</h6>
-                <h4 class="card-text fw-bold money-tooltip {{ 'positive' if stats.forecast_30_days >= 0 else 'negative' }}"
-                    data-hours="{{ stats.forecast_30_days }}">{{
-                    stats.forecast_30_days | format_balance }}</h4>
+    <div class="col-12 col-md mb-3 mb-md-0">
+        <div class="card bg-light h-100">
+            <div class="card-body text-center align-content-center">
+                <h6 class="card-title text-muted title-stat mb-1" style="font-size: 0.9rem;">Média Saldo Dia (7d)</h6>
+                <h4 class="card-text fw-bold mb-0 money-tooltip stat-7d" style="font-size: 1.25rem;" data-hours="{{ stats.stats_7d.delta_float }}">{{ stats.stats_7d.delta_float | format_time(True) }}</h4>
+                <h4 class="card-text fw-bold mb-0 money-tooltip stat-30d d-none" style="font-size: 1.25rem;" data-hours="{{ stats.stats_30d.delta_float }}">{{ stats.stats_30d.delta_float | format_time(True) }}</h4>
+                <h4 class="card-text fw-bold mb-0 money-tooltip stat-90d d-none" style="font-size: 1.25rem;" data-hours="{{ stats.stats_90d.delta_float }}">{{ stats.stats_90d.delta_float | format_time(True) }}</h4>
             </div>
         </div>
     </div>
-    <div class="col-md-3">
-        <div class="card bg-light">
-            <div class="card-body text-center">
-                <h6 class="card-title text-muted">Previsão Total (90d)</h6>
-                <h4 class="card-text fw-bold money-tooltip {{ 'positive' if stats.forecast_90_days >= 0 else 'negative' }}"
-                    data-hours="{{ stats.forecast_90_days }}">{{
-                    stats.forecast_90_days | format_balance }}</h4>
+    <div class="col-12 col-md mb-3 mb-md-0">
+        <div class="card bg-light h-100">
+            <div class="card-body text-center align-content-center">
+                <h6 class="card-title text-muted title-proj mb-1" style="font-size: 0.9rem;">Projeção 90d (Base 7d)</h6>
+                <h4 class="card-text fw-bold mb-0 money-tooltip stat-7d {{ 'positive' if stats.stats_7d.forecast_90_float >= 0 else 'negative' }}" style="font-size: 1.25rem;" data-hours="{{ stats.stats_7d.forecast_90_float }}">{{ stats.stats_7d.forecast_90_float | format_balance }}</h4>
+                <h4 class="card-text fw-bold mb-0 money-tooltip stat-30d d-none {{ 'positive' if stats.stats_30d.forecast_90_float >= 0 else 'negative' }}" style="font-size: 1.25rem;" data-hours="{{ stats.stats_30d.forecast_90_float }}">{{ stats.stats_30d.forecast_90_float | format_balance }}</h4>
+                <h4 class="card-text fw-bold mb-0 money-tooltip stat-90d d-none {{ 'positive' if stats.stats_90d.forecast_90_float >= 0 else 'negative' }}" style="font-size: 1.25rem;" data-hours="{{ stats.stats_90d.forecast_90_float }}">{{ stats.stats_90d.forecast_90_float | format_balance }}</h4>
             </div>
         </div>
     </div>
@@ -103,17 +119,16 @@
                     {% endif %}
                 </td>
 
-                <td class="text-start">
+                <td class="text-center">
                     {% if record.periods|length > 2 %}
-                    <div class="d-flex flex-column gap-1">
+                    <div class="d-flex flex-column gap-1 align-items-center">
                         {% for p in record.periods %}
                         <div class="small fw-bold">
-                            Período {{ loop.index }}: {{ p.entry_time.strftime('%H:%M') }} - {{
+                            Ent: {{ p.entry_time.strftime('%H:%M') }} - Saí: {{
                             p.exit_time.strftime('%H:%M') if p.exit_time else '(trabalhando)' }}
                         </div>
                         {% endfor %}
-                        <small class="text-muted">Mais de 2 períodos. Use <strong>Avançado</strong> para
-                            modificar.</small>
+
                     </div>
                     {% else %}
                     <form action="{{ url_for('main.day_quick_update', date_str=record.date) }}" method="POST"
@@ -410,6 +425,35 @@
                 el.setAttribute('title', prefix + formattedMoney);
             });
         }
+
+        const baseRadios = document.querySelectorAll('input[name="btnradio_stats"]');
+        baseRadios.forEach(radio => {
+            radio.addEventListener('change', function(e) {
+                const base = e.target.id === 'btn_stats_7d' ? '7d' : (e.target.id === 'btn_stats_30d' ? '30d' : '90d');
+                
+                document.querySelectorAll('.title-stat').forEach(el => {
+                    el.textContent = el.textContent.replace(/\(.*\)/, `(${base})`);
+                });
+                document.querySelectorAll('.title-proj').forEach(el => {
+                    el.textContent = `Projeção 90d (Base ${base})`;
+                });
+            
+                document.querySelectorAll('.stat-7d').forEach(el => {
+                    if (base === '7d') el.classList.remove('d-none');
+                    else el.classList.add('d-none');
+                });
+                document.querySelectorAll('.stat-30d').forEach(el => {
+                    if (base === '30d') el.classList.remove('d-none');
+                    else el.classList.add('d-none');
+                });
+                document.querySelectorAll('.stat-90d').forEach(el => {
+                    if (base === '90d') el.classList.remove('d-none');
+                    else el.classList.add('d-none');
+                });
+            
+                updateMoneyTooltips();
+            });
+        });
 
         updateMoneyTooltips();
     });

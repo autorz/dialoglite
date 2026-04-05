@@ -10,7 +10,7 @@ def index():
     auto_populate_days()
     settings = get_settings()
     history, current_balance = get_history_with_balances()
-    stats = get_dashboard_stats(history, current_balance)
+    stats = get_dashboard_stats(history)
     return render_template('index.html', history=history, current_balance=current_balance, settings=settings, stats=stats)
 
 @bp.route('/settings', methods=['POST'])
@@ -19,6 +19,16 @@ def update_settings():
         new_date_str = request.form.get('start_date')
         new_date = datetime.strptime(new_date_str, '%Y-%m-%d').date()
         set_start_date(new_date)
+
+        salary_str = request.form.get('monthly_salary')
+        if salary_str:
+            try:
+                salary = float(salary_str.replace(',', '.'))
+                settings = get_settings()
+                settings.monthly_salary = salary
+                db.session.commit()
+            except ValueError:
+                pass
 
         flash('Configurações atualizadas com sucesso!', 'success')
     except Exception as e:

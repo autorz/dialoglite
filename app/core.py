@@ -166,21 +166,13 @@ def get_history_with_balances() -> Tuple[List[dict], float]:
     return history, running_balance
 
 
-def get_dashboard_stats(history: List[dict], current_balance: float) -> dict:
+def get_dashboard_stats(history: List[dict]) -> dict:
     today = date.today()
 
     # 1. Gather workdays extras
     # History is descending (newest first)
     last_7_days_deltas = []
     last_30_days_deltas = []
-    last_90_days_deltas = []
-
-    last_7_days_arrivals = []
-    last_7_days_departures = []
-    last_30_days_arrivals = []
-    last_30_days_departures = []
-    last_90_days_arrivals = []
-    last_90_days_departures = []
 
     for record in history:
         record_date = record['date']
@@ -190,70 +182,28 @@ def get_dashboard_stats(history: List[dict], current_balance: float) -> dict:
 
         days_ago = (today - record_date).days
 
-        if days_ago < 90:
-            if record['periods']:
-                entries = [p.entry_time for p in record['periods'] if p.entry_time]
-                if entries:
-                    first_entry = min(entries)
-                    val = first_entry.hour + first_entry.minute / 60.0
-                    last_90_days_arrivals.append(val)
-                    if days_ago < 30:
-                        last_30_days_arrivals.append(val)
-                    if days_ago < 7:
-                        last_7_days_arrivals.append(val)
-
-                max_exit_val = 0.0
-                for p in record['periods']:
-                    if not p.entry_time or not p.exit_time:
-                        continue
-                    val = p.exit_time.hour + p.exit_time.minute / 60.0
-                    if p.exit_time < p.entry_time:
-                        val += 24.0
-                    if val > max_exit_val:
-                        max_exit_val = val
-                
-                if max_exit_val > 0:
-                    last_90_days_departures.append(max_exit_val)
-                    if days_ago < 30:
-                        last_30_days_departures.append(max_exit_val)
-                        if days_ago < 7:
-                            last_7_days_departures.append(max_exit_val)
-
         # We only consider workdays (not weekend, not holiday)
         if not record['is_weekend'] and not record['is_holiday']:
-            if days_ago < 90:
-                last_90_days_deltas.append(record['daily_delta'])
-                if days_ago < 30:
-                    last_30_days_deltas.append(record['daily_delta'])
-                    if days_ago < 7:
-                        last_7_days_deltas.append(record['daily_delta'])
+            if days_ago < 7:
+                last_7_days_deltas.append(record['daily_delta'])
+            if days_ago < 30:
+                last_30_days_deltas.append(record['daily_delta'])
 
-    def float_to_time_str(val):
-        h = int(val)
-        m = int(round((val - h) * 60))
-        if m == 60:
-            h += 1
-            m = 0
-        h = h % 24
-        return f"{h:02d}:{m:02d}"
-
-    avg_7_days_delta = sum(last_7_days_deltas) / len(last_7_days_deltas) if last_7_days_deltas else 0.0
-    avg_30_days_delta = sum(last_30_days_deltas) / len(last_30_days_deltas) if last_30_days_deltas else 0.0
-    avg_90_days_delta = sum(last_90_days_deltas) / len(last_90_days_deltas) if last_90_days_deltas else 0.0
-
-    avg_7_days_arr_str = float_to_time_str(sum(last_7_days_arrivals) / len(last_7_days_arrivals)) if last_7_days_arrivals else "--:--"
-    avg_30_days_arr_str = float_to_time_str(sum(last_30_days_arrivals) / len(last_30_days_arrivals)) if last_30_days_arrivals else "--:--"
-    avg_90_days_arr_str = float_to_time_str(sum(last_90_days_arrivals) / len(last_90_days_arrivals)) if last_90_days_arrivals else "--:--"
-
-    avg_7_days_dep_str = float_to_time_str(sum(last_7_days_departures) / len(last_7_days_departures)) if last_7_days_departures else "--:--"
-    avg_30_days_dep_str = float_to_time_str(sum(last_30_days_departures) / len(last_30_days_departures)) if last_30_days_departures else "--:--"
-    avg_90_days_dep_str = float_to_time_str(sum(last_90_days_departures) / len(last_90_days_departures)) if last_90_days_departures else "--:--"
+    avg_7_days = sum(last_7_days_deltas) / len(last_7_days_deltas) if last_7_days_deltas else 0.0
+    avg_30_days = sum(last_30_days_deltas) / len(last_30_days_deltas) if last_30_days_deltas else 0.0
 
     # 2. Forecast expected workdays
+    future_30_workdays = 0
     future_90_workdays = 0
 
     for i in range(1, 91):
         future_date = today + timedelta(days=i)
+
+        # We need a DayRecord to pass to is_holiday for manual checks.
+        # But for future dates, they might not exist yet.
+        # For forecasting, we'll just check if it's a Brazilian holiday or weekend.
+        # Since manual holidays are usually set per day record, we might miss future manual holidays,
+        # but standard BR holidays will be caught.
 
         # Fetch if exists to check manual holiday
         existing = DayRecord.query.get(future_date)
@@ -261,12 +211,13 @@ def get_dashboard_stats(history: List[dict], current_balance: float) -> dict:
         is_weekend = future_date.weekday() >= 5
 
         if not is_weekend and not is_hol:
+            if i <= 30:
+                future_30_workdays += 1
             if i <= 90:
                 future_90_workdays += 1
 
-    forecast_90_days_7d = (future_90_workdays * avg_7_days_delta)
-    forecast_90_days_30d = (future_90_workdays * avg_30_days_delta)
-    forecast_90_days_90d = (future_90_workdays * avg_90_days_delta)
+    forecast_30_days = future_30_workdays * avg_30_days
+    forecast_90_days = future_90_workdays * avg_30_days
 
     # 3. Chart data (last 90 days, ascending)
     chart_data = []
@@ -290,23 +241,9 @@ def get_dashboard_stats(history: List[dict], current_balance: float) -> dict:
         })
 
     return {
-        'stats_7d': {
-            'arrival_str': avg_7_days_arr_str,
-            'departure_str': avg_7_days_dep_str,
-            'delta_float': avg_7_days_delta,
-            'forecast_90_float': forecast_90_days_7d
-        },
-        'stats_30d': {
-            'arrival_str': avg_30_days_arr_str,
-            'departure_str': avg_30_days_dep_str,
-            'delta_float': avg_30_days_delta,
-            'forecast_90_float': forecast_90_days_30d
-        },
-        'stats_90d': {
-            'arrival_str': avg_90_days_arr_str,
-            'departure_str': avg_90_days_dep_str,
-            'delta_float': avg_90_days_delta,
-            'forecast_90_float': forecast_90_days_90d
-        },
+        'avg_7_days': avg_7_days,
+        'avg_30_days': avg_30_days,
+        'forecast_30_days': forecast_30_days,
+        'forecast_90_days': forecast_90_days,
         'chart_data': chart_data
     }

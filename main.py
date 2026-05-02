@@ -81,7 +81,10 @@ def ptbr_weekday(d):
 
 def create_app():
     app = Flask(__name__, template_folder='app/templates', static_folder='app/static')
-    app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'dev-key-fallback')
+    
+    # Security: Use environment variable or a random key
+    app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY') or os.urandom(24).hex()
+    
     app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('DATABASE_URI', 'sqlite:///app.db')
     app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 

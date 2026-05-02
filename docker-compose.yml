@@ -3,6 +3,7 @@ version: '3.8'
 services:
   app:
     build: .
+    container_name: dialoglite
     ports:
       - "8000:8000"
     volumes:
@@ -10,3 +11,9 @@ services:
     environment:
       - DATABASE_URI=sqlite:////app/data/app.db
     restart: always
+    healthcheck:
+      test: ["CMD", "python3", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s

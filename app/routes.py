@@ -10,7 +10,7 @@ def index():
     auto_populate_days()
     settings = get_settings()
     history, current_balance = get_history_with_balances()
-    stats = get_dashboard_stats(history)
+    stats = get_dashboard_stats(history, current_balance)
     return render_template('index.html', history=history, current_balance=current_balance, settings=settings, stats=stats)
 
 @bp.route('/settings', methods=['POST'])
@@ -26,16 +26,6 @@ def update_settings():
         def_exit = datetime.strptime(request.form.get('default_exit', '18:00'), '%H:%M').time()
 
         update_settings_all(new_date, def_entry, def_lunch_start, def_lunch_end, def_exit)
-
-        salary_str = request.form.get('monthly_salary')
-        if salary_str:
-            try:
-                salary = float(salary_str.replace(',', '.'))
-                settings = get_settings()
-                settings.monthly_salary = salary
-                db.session.commit()
-            except ValueError:
-                pass
 
         flash('Configurações atualizadas com sucesso!', 'success')
     except Exception as e:
@@ -92,8 +82,6 @@ def day_edit(date_str):
         override_val = request.form.get('balance_override')
         if override_val:
             try:
-                # Recebemos em float? Não, precisamos parsear um float no formato (ex: 10.5 horas).
-                # No entanto o usuario digitará algo no html. Assumimos horas.
                 day_record.balance_override = float(override_val)
             except ValueError:
                 day_record.balance_override = None

@@ -52,6 +52,10 @@ docker run -d \
   -p 8000:8000 \
   -v $(pwd)/data:/app/data \
   -e DATABASE_URI=sqlite:////app/data/app.db \
+  --health-cmd "python3 -c 'import urllib.request; urllib.request.urlopen(\"http://localhost:8000\")'" \
+  --health-interval 30s \
+  --health-timeout 10s \
+  --health-retries 3 \
   ghcr.io/autorz/dialoglite:latest
 ```
 
@@ -69,6 +73,12 @@ services:
     environment:
       - DATABASE_URI=sqlite:////app/data/app.db
     restart: always
+    healthcheck:
+      test: ["CMD", "python3", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
 ```
 Then run:
 ```bash

@@ -3,11 +3,16 @@ from flask import Flask
 from app.models import db
 from app.routes import bp
 
-def format_balance(hours_float: float):
+def format_balance(hours_float: float, with_sign=False):
     if hours_float is None:
         return ""
 
-    sign = "-" if hours_float < 0 else ""
+    sign = ""
+    if hours_float < 0:
+        sign = "-"
+    elif hours_float > 0 and with_sign:
+        sign = "+"
+
     val = abs(hours_float)
 
     # 1 day = 8 hours

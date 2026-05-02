@@ -159,8 +159,20 @@ input[type="time"]::-webkit-calendar-picker-indicator {
   transition: background-color 0.15s ease;
 }
 
+/* Custom Manual Hover - Subtle brightness increase */
 .table tr:not(.table-dark):hover td {
-  background-color: rgba(205, 214, 244, 0.05) !important;
+  background-image: linear-gradient(rgba(255, 255, 255, 0.03), rgba(255, 255, 255, 0.03)) !important;
+}
+
+/* Category hovers using subtle overlays */
+.table tr.table-warning:hover td {
+  background-color: rgba(249, 226, 175, 0.15) !important;
+}
+.table tr.table-light:hover td {
+  background-color: var(--ctp-surface1) !important;
+}
+.table tr.table-consolidated:hover td {
+  background-color: rgba(137, 180, 250, 0.15) !important;
 }
 
 .btn:active {

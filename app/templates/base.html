@@ -79,12 +79,58 @@
                 value="{{ settings.start_date if settings else '2026-01-01' }}" required>
               <small class="text-muted">Aviso: Mover esta data para o futuro excluirá os registros anteriores.</small>
             </div>
+            
+            <!-- Financial Settings (Browser Only) -->
             <div class="mb-3">
               <label class="form-label">Salário Mensal (Opcional)</label>
-              <input type="number" step="0.01" name="monthly_salary" class="form-control"
-                value="{{ settings.monthly_salary if settings and settings.monthly_salary else '' }}"
+              <input type="number" step="0.01" id="monthly_salary_input" class="form-control" value=""
                 placeholder="Ex: 3500.00">
-              <small class="text-muted">Usado para exibir conversões estimadas em dinheiro.</small>
+            </div>
+            <div class="mb-3">
+              <label class="form-label">Horas Mensais (Padrão)</label>
+              <select id="monthly_hours_select" class="form-select">
+                <option value="220">220 horas</option>
+                <option value="200">200 horas</option>
+                <option value="176">176 horas</option>
+                <option value="custom">Outro valor...</option>
+              </select>
+              <div id="custom_hours_container" class="mt-2 d-none">
+                <input type="number" step="0.1" id="monthly_hours_custom" class="form-control"
+                  placeholder="Digite o valor (ex: 160)">
+              </div>
+            </div>
+
+            <div class="alert alert-info py-2 px-3 mt-2 mb-3" style="font-size: 0.85rem;">
+              <i class="bi bi-info-circle me-1"></i>
+              Estes dados financeiros são salvos <strong>apenas no seu navegador</strong>.
+              Eles não são sincronizados e devem ser configurados em cada dispositivo.
+            </div>
+
+            <hr>
+            <h6 class="mb-3">Horário Padrão (Novos Dias)</h6>
+            <div class="row g-2 mb-3">
+              <div class="col">
+                <label class="form-label small">Entrada</label>
+                <input type="time" name="default_entry" class="form-control"
+                  value="{{ settings.default_entry.strftime('%H:%M') if settings and settings.default_entry else '09:00' }}" required>
+              </div>
+              <div class="col">
+                <label class="form-label small">Almoço (Início)</label>
+                <input type="time" name="default_lunch_start" class="form-control"
+                  value="{{ settings.default_lunch_start.strftime('%H:%M') if settings and settings.default_lunch_start else '12:00' }}" required>
+              </div>
+            </div>
+            <div class="row g-2 mb-3">
+              <div class="col">
+                <label class="form-label small">Almoço (Fim)</label>
+                <input type="time" name="default_lunch_end" class="form-control"
+                  value="{{ settings.default_lunch_end.strftime('%H:%M') if settings and settings.default_lunch_end else '13:00' }}" required>
+              </div>
+              <div class="col">
+                <label class="form-label small">Saída</label>
+                <input type="time" name="default_exit" class="form-control"
+                  value="{{ settings.default_exit.strftime('%H:%M') if settings and settings.default_exit else '18:00' }}" required>
+              </div>
             </div>
           </div>
           <div class="modal-footer">
@@ -99,6 +145,61 @@
   <!-- Use local Bootstrap JS -->
   <script src="{{ url_for('static', filename='js/bootstrap.bundle.min.js') }}"></script>
   {% block scripts %}{% endblock %}
+
+  <script>
+    document.addEventListener('DOMContentLoaded', function () {
+      const salaryInput = document.getElementById('monthly_salary_input');
+      const hoursSelect = document.getElementById('monthly_hours_select');
+      const hoursCustomInput = document.getElementById('monthly_hours_custom');
+      const customHoursContainer = document.getElementById('custom_hours_container');
+      const settingsForm = document.querySelector('#settingsModal form');
+
+      function toggleCustomHours() {
+        if (hoursSelect.value === 'custom') {
+          customHoursContainer.classList.remove('d-none');
+        } else {
+          customHoursContainer.classList.add('d-none');
+        }
+      }
+
+      if (hoursSelect) {
+        hoursSelect.addEventListener('change', toggleCustomHours);
+      }
+
+      // Load from localStorage
+      const savedSalary = localStorage.getItem('monthly_salary');
+      if (savedSalary && salaryInput) {
+        salaryInput.value = savedSalary;
+      }
+
+      const savedHours = localStorage.getItem('monthly_hours') || '220';
+      if (hoursSelect) {
+        if (['220', '200', '176'].includes(savedHours)) {
+          hoursSelect.value = savedHours;
+        } else {
+          hoursSelect.value = 'custom';
+          if (hoursCustomInput) hoursCustomInput.value = savedHours;
+          toggleCustomHours();
+        }
+      }
+
+      // Save to localStorage when form is submitted
+      if (settingsForm) {
+        settingsForm.addEventListener('submit', function () {
+          if (salaryInput) {
+            localStorage.setItem('monthly_salary', salaryInput.value);
+          }
+          if (hoursSelect) {
+            let hours = hoursSelect.value;
+            if (hours === 'custom' && hoursCustomInput) {
+              hours = hoursCustomInput.value;
+            }
+            localStorage.setItem('monthly_hours', hours);
+          }
+        });
+      }
+    });
+  </script>
 
 </body>
 

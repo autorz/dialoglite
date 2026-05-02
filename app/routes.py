@@ -1,7 +1,7 @@
 from flask import Blueprint, render_template, request, redirect, url_for, flash
 from datetime import datetime, date
 from .models import db, Settings, DayRecord, TimePeriod
-from .core import get_settings, set_start_date, auto_populate_days, get_history_with_balances, update_day_periods, get_dashboard_stats
+from .core import get_settings, update_settings_all, auto_populate_days, get_history_with_balances, update_day_periods, get_dashboard_stats
 
 bp = Blueprint('main', __name__)
 
@@ -18,7 +18,14 @@ def update_settings():
     try:
         new_date_str = request.form.get('start_date')
         new_date = datetime.strptime(new_date_str, '%Y-%m-%d').date()
-        set_start_date(new_date)
+
+        # Parse new default times
+        def_entry = datetime.strptime(request.form.get('default_entry', '09:00'), '%H:%M').time()
+        def_lunch_start = datetime.strptime(request.form.get('default_lunch_start', '12:00'), '%H:%M').time()
+        def_lunch_end = datetime.strptime(request.form.get('default_lunch_end', '13:00'), '%H:%M').time()
+        def_exit = datetime.strptime(request.form.get('default_exit', '18:00'), '%H:%M').time()
+
+        update_settings_all(new_date, def_entry, def_lunch_start, def_lunch_end, def_exit)
 
         salary_str = request.form.get('monthly_salary')
         if salary_str:

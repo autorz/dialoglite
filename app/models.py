@@ -6,7 +6,10 @@ db = SQLAlchemy()
 class Settings(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     start_date = db.Column(db.Date, nullable=False, default=date(2026, 1, 1))
-    monthly_salary = db.Column(db.Float, nullable=True, default=0.0)
+    default_entry = db.Column(db.Time, nullable=False, default=time(9, 0))
+    default_lunch_start = db.Column(db.Time, nullable=False, default=time(12, 0))
+    default_lunch_end = db.Column(db.Time, nullable=False, default=time(13, 0))
+    default_exit = db.Column(db.Time, nullable=False, default=time(18, 0))
 
 class DayRecord(db.Model):
     date = db.Column(db.Date, primary_key=True)

@@ -90,6 +90,25 @@ def create_app():
     with app.app_context():
         # Ensure database tables are created
         db.create_all()
+        
+        # Migration: Add missing columns to settings table if they don't exist
+        try:
+            engine = db.engine
+            with engine.connect() as conn:
+                result = conn.execute(db.text("PRAGMA table_info(settings)"))
+                columns = [row[1] for row in result]
+                
+                if 'default_entry' not in columns:
+                    conn.execute(db.text("ALTER TABLE settings ADD COLUMN default_entry TIME NOT NULL DEFAULT '09:00:00'"))
+                if 'default_lunch_start' not in columns:
+                    conn.execute(db.text("ALTER TABLE settings ADD COLUMN default_lunch_start TIME NOT NULL DEFAULT '12:00:00'"))
+                if 'default_lunch_end' not in columns:
+                    conn.execute(db.text("ALTER TABLE settings ADD COLUMN default_lunch_end TIME NOT NULL DEFAULT '13:00:00'"))
+                if 'default_exit' not in columns:
+                    conn.execute(db.text("ALTER TABLE settings ADD COLUMN default_exit TIME NOT NULL DEFAULT '18:00:00'"))
+                conn.commit()
+        except Exception as e:
+            app.logger.error(f"Migration error: {e}")
 
     app.register_blueprint(bp)
 

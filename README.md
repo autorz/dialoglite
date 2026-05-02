@@ -2,6 +2,10 @@
 
 A lightweight, responsive web application for personal time tracking and overtime management. Designed for privacy and simplicity, Dia Log Lite helps you keep track of your working hours, visualize your productivity trends, and estimate the monetary value of your overtime.
 
+> [!WARNING]
+> **Security Notice:** This application is designed with a **Zero Trust** architecture in mind. It does **not** include built-in authentication. It is intended to be deployed behind an identity-aware proxy or zero-trust gateway (e.g., Cloudflare Access, Tailscale Funnel, or Authelia).
+
+
 ## Features
 
 - **Automated Workday Simulation:** Automatically populates default work hours (09:00 - 12:00, 13:00 - 18:00) for standard workdays.
@@ -36,6 +40,41 @@ A lightweight, responsive web application for personal time tracking and overtim
    docker compose up -d
    ```
 3. Access the dashboard at `http://localhost:8000`.
+
+### Using the Pre-built Image
+
+If you don't want to build the image yourself, you can use the official image from GitHub Container Registry.
+
+#### Docker Run
+```bash
+docker run -d \
+  --name dialoglite \
+  -p 8000:8000 \
+  -v $(pwd)/data:/app/data \
+  -e DATABASE_URI=sqlite:////app/data/app.db \
+  ghcr.io/autorz/dialoglite:latest
+```
+
+#### Docker Compose
+Create a `docker-compose.yml` file:
+```yaml
+services:
+  app:
+    image: ghcr.io/autorz/dialoglite:latest
+    container_name: dialoglite
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./data:/app/data
+    environment:
+      - DATABASE_URI=sqlite:////app/data/app.db
+    restart: always
+```
+Then run:
+```bash
+docker compose up -d
+```
+
 
 ### Local Development
 

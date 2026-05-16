@@ -39,7 +39,7 @@ def get_settings_api():
         default_lunch_start=settings.default_lunch_start,
         default_lunch_end=settings.default_lunch_end,
         default_exit=settings.default_exit
-    ).model_dump()
+    ).model_dump(mode="json")
 
 @api_bp.put(
     "/settings",
@@ -56,9 +56,9 @@ def update_settings_api(body: SettingsSchema):
             body.default_lunch_end,
             body.default_exit
         )
-        return MessageResponse(message="Settings updated successfully").model_dump()
+        return MessageResponse(message="Settings updated successfully").model_dump(mode="json")
     except Exception as e:
-        return MessageResponse(message=str(e)).model_dump(), 400
+        return MessageResponse(message=str(e)).model_dump(mode="json"), 400
 
 @api_bp.get(
     "/history",
@@ -100,7 +100,7 @@ def get_history_api():
         current_balance=current_balance,
         current_balance_pretty=format_balance(current_balance, with_sign=True),
         days=days
-    ).model_dump()
+    ).model_dump(mode="json")
 
 @api_bp.get(
     "/stats",
@@ -162,9 +162,9 @@ def get_day_api(path: DatePathParams):
                 override_pretty=format_balance(day['override'], with_sign=True) if day['override'] is not None else None,
                 is_consolidated=day['is_consolidated'],
                 periods=periods
-            ).model_dump()
+            ).model_dump(mode="json")
 
-    return MessageResponse(message="Day not found").model_dump(), 404
+    return MessageResponse(message="Day not found").model_dump(mode="json"), 404
 
 @api_bp.put(
     "/days/<string:date>",
@@ -177,7 +177,7 @@ def update_day_api(path: DatePathParams, body: UpdateDayRequest):
     day_record = DayRecord.query.get(day_date)
 
     if not day_record:
-        return MessageResponse(message="Day not found").model_dump(), 404
+        return MessageResponse(message="Day not found").model_dump(mode="json"), 404
 
     if body.notes is not None:
         day_record.notes = body.notes
@@ -195,7 +195,7 @@ def update_day_api(path: DatePathParams, body: UpdateDayRequest):
 
     try:
         db.session.commit()
-        return MessageResponse(message="Day updated successfully").model_dump()
+        return MessageResponse(message="Day updated successfully").model_dump(mode="json")
     except Exception as e:
         db.session.rollback()
-        return MessageResponse(message=str(e)).model_dump(), 400
+        return MessageResponse(message=str(e)).model_dump(mode="json"), 400

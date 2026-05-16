@@ -5,7 +5,6 @@ A lightweight, responsive web application for personal time tracking and overtim
 > [!WARNING]
 > **Security Notice:** This application is designed with a **Zero Trust** architecture in mind. It does **not** include built-in authentication. It is intended to be deployed behind an identity-aware proxy or zero-trust gateway (e.g., Cloudflare Access, Tailscale Funnel, or Authelia). At the very least add basic http authentication on the webserver/proxy.
 
-
 ## Features
 
 - **Automated Workday Simulation:** Automatically populates default work hours (09:00 - 12:00, 13:00 - 18:00) for standard workdays.
@@ -23,68 +22,15 @@ A lightweight, responsive web application for personal time tracking and overtim
   - **Advanced Edit:** Manage multiple periods, add notes, toggle holiday status, or set manual balance overrides.
 - **Holiday Detection:** Automatic detection of Brazilian holidays (SP subdivision) with the ability to manually flag any day as a holiday.
 - **Responsive Design:** Optimized for both desktop and mobile viewing with a clean, modern UI based on the Catppuccin theme.
+- **MCP Server Support:** Native `fastmcp` integration, exposing your data and tool-actions to local AI agents (SSE enabled on `/mcp/sse`).
 
 ## Tech Stack
 
-- **Backend:** Python (3.12+), Flask, Flask-SQLAlchemy (SQLite)
+- **Backend:** Python (3.12+), Flask, FastAPI / Starlette / FastMCP, Flask-SQLAlchemy (SQLite)
 - **Frontend:** HTML5, Bootstrap 5, Chart.js (Local assets)
 - **Environment:** Docker, Docker Compose, uv
 
 ## Getting Started
-
-### Running with Docker Compose
-
-1. Clone the repository.
-2. Start the application:
-   ```bash
-   docker compose up -d
-   ```
-3. Access the dashboard at `http://localhost:8000`.
-
-### Using the Pre-built Image
-
-If you don't want to build the image yourself, you can use the official image from GitHub Container Registry.
-
-#### Docker Run
-```bash
-docker run -d \
-  --name dialoglite \
-  -p 8000:8000 \
-  -v $(pwd)/data:/app/data \
-  -e DATABASE_URI=sqlite:////app/data/app.db \
-  --health-cmd "python3 -c 'import urllib.request; urllib.request.urlopen(\"http://localhost:8000\")'" \
-  --health-interval 30s \
-  --health-timeout 10s \
-  --health-retries 3 \
-  ghcr.io/autorz/dialoglite:latest
-```
-
-#### Docker Compose
-Create a `docker-compose.yml` file:
-```yaml
-services:
-  app:
-    image: ghcr.io/autorz/dialoglite:latest
-    container_name: dialoglite
-    ports:
-      - "8000:8000"
-    volumes:
-      - ./data:/app/data
-    environment:
-      - DATABASE_URI=sqlite:////app/data/app.db
-    restart: always
-    healthcheck:
-      test: ["CMD", "python3", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000')"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 10s
-```
-Then run:
-```bash
-docker compose up -d
-```
-
 
 ### Local Development
 
@@ -95,9 +41,10 @@ docker compose up -d
    ```
 3. Run the application:
    ```bash
-   uv run python main.py
+   uv run uvicorn asgi:app --host 0.0.0.0 --port 8000
    ```
 4. Open `http://localhost:8000` in your browser.
+5. Provide the MCP server connection to your local AI Agent pointing to `http://localhost:8000/mcp/sse`.
 
 ## Configuration
 

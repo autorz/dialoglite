@@ -51,7 +51,9 @@ def create_app():
 
     return app
 
+# We leave this for backwards compatibility, but recommend using asgi.py or uvicorn
 app = create_app()
 
 if __name__ == '__main__':
+    # Fallback to standard Flask runner if executed directly
     app.run(debug=True, host='0.0.0.0', port=8000)

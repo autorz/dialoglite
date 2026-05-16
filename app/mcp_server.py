@@ -1,9 +1,7 @@
 from fastmcp import FastMCP
-from typing import List, Optional, Tuple, Dict, Any
-from datetime import date, time
+from typing import List, Optional
 from pydantic import BaseModel, Field
-import json
-from .models import db, DayRecord, TimePeriod
+from .models import db, DayRecord
 from .core import (
     get_settings,
     update_settings_all,
@@ -13,7 +11,6 @@ from .core import (
     auto_populate_days
 )
 
-# We need a reference to the flask app to provide context for database operations
 _flask_app = None
 
 def set_flask_app(app):
@@ -21,18 +18,6 @@ def set_flask_app(app):
     _flask_app = app
 
 mcp = FastMCP("Dialoglite MCP")
-
-def with_app_context(func):
-    """Decorator to ensure the function runs within a Flask app context."""
-    def wrapper(*args, **kwargs):
-        if _flask_app is None:
-            raise RuntimeError("Flask app not configured for MCP server")
-        with _flask_app.app_context():
-            return func(*args, **kwargs)
-
-    # FastMCP uses signature inspection, so we need to preserve signature
-    # However, for FastMCP.tool(), it's better to manually wrap the logic inside the tools
-    return wrapper
 
 @mcp.tool()
 def get_settings_tool() -> dict:

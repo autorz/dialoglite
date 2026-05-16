@@ -24,4 +24,4 @@ ENV FLASK_ENV=production
 RUN mkdir -p /app/data
 
 # Run the app
-CMD ["gunicorn", "--bind", "0.0.0.0:8000", "main:app"]
+CMD ["uvicorn", "asgi:app", "--host", "0.0.0.0", "--port", "8000"]

@@ -4,7 +4,8 @@ A lightweight, responsive web application for personal time tracking and overtim
 
 > [!WARNING]
 > **Security Notice:** This application is designed with a **Zero Trust** architecture in mind. It does **not** include built-in authentication. It is intended to be deployed behind an identity-aware proxy or zero-trust gateway (e.g., Cloudflare Access, Tailscale Funnel, or Authelia). At the very least add basic http authentication on the webserver/proxy.
-
+>
+> **The MCP server endpoint at `/mcp/sse` is also unauthenticated** and allows full read/write access to your data (notes, periods, settings). If you expose the service beyond `localhost`, gate `/mcp/sse` and `/mcp/messages/` the same way you gate the rest of the app, or block them at the proxy layer.
 
 ## Features
 
@@ -23,10 +24,11 @@ A lightweight, responsive web application for personal time tracking and overtim
   - **Advanced Edit:** Manage multiple periods, add notes, toggle holiday status, or set manual balance overrides.
 - **Holiday Detection:** Automatic detection of Brazilian holidays (SP subdivision) with the ability to manually flag any day as a holiday.
 - **Responsive Design:** Optimized for both desktop and mobile viewing with a clean, modern UI based on the Catppuccin theme.
+- **MCP Server Support:** Native `fastmcp` integration, exposing your data and tool-actions to local AI agents (SSE enabled on `/mcp/sse`).
 
 ## Tech Stack
 
-- **Backend:** Python (3.12+), Flask, Flask-SQLAlchemy (SQLite)
+- **Backend:** Python (3.12+), Flask, Starlette / FastMCP (ASGI via Uvicorn), Flask-SQLAlchemy (SQLite)
 - **Frontend:** HTML5, Bootstrap 5, Chart.js (Local assets)
 - **Environment:** Docker, Docker Compose, uv
 
@@ -85,7 +87,6 @@ Then run:
 docker compose up -d
 ```
 
-
 ### Local Development
 
 1. Install `uv` if you haven't already.
@@ -95,9 +96,10 @@ docker compose up -d
    ```
 3. Run the application:
    ```bash
-   uv run python main.py
+   uv run uvicorn asgi:app --host 0.0.0.0 --port 8000
    ```
 4. Open `http://localhost:8000` in your browser.
+5. Point your local AI agent's MCP client at `http://localhost:8000/mcp/sse`.
 
 ## Configuration
 

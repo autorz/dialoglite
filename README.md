@@ -5,7 +5,7 @@ A lightweight, responsive web application for personal time tracking and overtim
 > [!WARNING]
 > **Security Notice:** This application is designed with a **Zero Trust** architecture in mind. It does **not** include built-in authentication. It is intended to be deployed behind an identity-aware proxy or zero-trust gateway (e.g., Cloudflare Access, Tailscale Funnel, or Authelia). At the very least add basic http authentication on the webserver/proxy.
 >
-> **The MCP server endpoint at `/mcp/sse` is also unauthenticated** and allows full read/write access to your data (notes, periods, settings). If you expose the service beyond `localhost`, gate `/mcp/sse` and `/mcp/messages/` the same way you gate the rest of the app, or block them at the proxy layer.
+> **The MCP server endpoint at `/mcp` is also unauthenticated** and allows full read/write access to your data (notes, periods, settings). If you expose the service beyond `localhost`, gate `/mcp` the same way you gate the rest of the app, or block it at the proxy layer.
 
 ## Features
 
@@ -20,11 +20,11 @@ A lightweight, responsive web application for personal time tracking and overtim
   - **Interactive Charts:** Visualize your balance history and 7-day moving average with an integrated line chart.
 - **Privacy-First Monetary Estimation:** Tooltips display the monetary value of your time based on your salary. All salary data is stored **locally in your browser** and never touches the server.
 - **Flexible Entry Management:**
-  - **Quick Update:** Edit the main periods of any day directly from the dashboard.
-  - **Advanced Edit:** Manage multiple periods, add notes, toggle holiday status, or set manual balance overrides.
+  - **Quick Update:** Edit the main periods and the daily note for any row directly from the dashboard. Modified rows are highlighted and a single **Save** click commits every changed row in one shot.
+  - **Advanced Edit:** Manage multiple periods, toggle holiday status, or set manual balance overrides.
 - **Holiday Detection:** Automatic detection of Brazilian holidays (SP subdivision) with the ability to manually flag any day as a holiday.
 - **Responsive Design:** Optimized for both desktop and mobile viewing with a clean, modern UI based on the Catppuccin theme.
-- **MCP Server Support:** Native `fastmcp` integration, exposing your data and tool-actions to local AI agents (SSE enabled on `/mcp/sse`).
+- **MCP Server Support:** Native `fastmcp` integration over the streamable-HTTP transport at `/mcp`, exposing your data and tool actions to AI clients (Claude, Claude Code, VS Code, etc.).
 
 ## Tech Stack
 
@@ -99,7 +99,66 @@ docker compose up -d
    uv run uvicorn asgi:app --host 0.0.0.0 --port 8000
    ```
 4. Open `http://localhost:8000` in your browser.
-5. Point your local AI agent's MCP client at `http://localhost:8000/mcp/sse`.
+5. Point your AI client's MCP configuration at `http://localhost:8000/mcp` — see [Connecting AI Clients (MCP)](#connecting-ai-clients-mcp).
+
+## Connecting AI Clients (MCP)
+
+Dialoglite exposes a Model Context Protocol server using the **streamable-HTTP** transport. The endpoint is:
+
+```
+http://<your-host>:8000/mcp
+```
+
+> [!IMPORTANT]
+> The endpoint is **unauthenticated** and grants full read/write access to your data. Only expose it through an identity-aware proxy (Cloudflare Access, Tailscale, Authelia…) or keep it on `localhost` / your private network. Replace `http://` with `https://` once you put it behind TLS.
+
+### Claude (claude.ai)
+
+1. Open **Settings → Connectors → Add custom connector** (the menu may also appear as *Integrations* depending on your plan).
+2. Paste the URL of your `/mcp` endpoint as the **Remote MCP server URL** and give it a name (e.g. `Dialoglite`).
+3. Save and authorize. The Dialoglite tools will appear in any new chat.
+
+Custom connectors require a paid Claude plan.
+
+### Claude Code (CLI)
+
+Add the server with a single command:
+
+```bash
+claude mcp add --transport http dialoglite https://your-host/mcp
+```
+
+Or commit a project-scoped `.mcp.json` so collaborators pick it up automatically:
+
+```json
+{
+  "mcpServers": {
+    "dialoglite": {
+      "type": "http",
+      "url": "https://your-host/mcp"
+    }
+  }
+}
+```
+
+Verify with `claude mcp list`.
+
+### VS Code (GitHub Copilot Chat — agent mode)
+
+Create `.vscode/mcp.json` in your workspace (or add the same JSON under `chat.mcp.servers` in your user `settings.json` for global use):
+
+```json
+{
+  "servers": {
+    "dialoglite": {
+      "type": "http",
+      "url": "https://your-host/mcp"
+    }
+  }
+}
+```
+
+VS Code 1.97+ picks this up automatically and the Dialoglite tools become available in Copilot Chat's agent mode.
 
 ## Configuration
 

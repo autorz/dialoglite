@@ -91,7 +91,8 @@
             <tr>
                 <th style="width: 10%;">Data</th>
                 <th style="width: 8%;">Tipo</th>
-                <th style="width: 50%;">Períodos (Edição Rápida)</th>
+                <th style="width: 32%;">Períodos (Edição Rápida)</th>
+                <th style="width: 18%;">Observação</th>
                 <th style="width: 8%;">Trabalhado</th>
                 <th style="width: 8%;">Esperado</th>
                 <th style="width: 8%;">Delta Diário</th>
@@ -101,6 +102,7 @@
         <tbody>
             {% for record in history %}
             <tr
+                data-date="{{ record.date.strftime('%Y-%m-%d') }}"
                 class="{% if record.is_consolidated %}table-consolidated{% elif record.is_holiday or record.manual_holiday %}table-warning{% elif record.is_weekend %}table-light{% endif %}">
                 <td>
                     <strong>{{ record.date.strftime('%d/%m/%Y') }}</strong><br>
@@ -120,19 +122,18 @@
                 </td>
 
                 <td class="text-center">
-                    {% if record.periods|length > 2 %}
-                    <div class="d-flex flex-column gap-1 align-items-center">
-                        {% for p in record.periods %}
-                        <div class="small fw-bold">
-                            Ent: {{ p.entry_time.strftime('%H:%M') }} - Saí: {{
-                            p.exit_time.strftime('%H:%M') if p.exit_time else '(trabalhando)' }}
-                        </div>
-                        {% endfor %}
-
-                    </div>
-                    {% else %}
-                    <form action="{{ url_for('main.day_quick_update', date_str=record.date) }}" method="POST"
+                    <form id="qf-{{ record.date }}" action="{{ url_for('main.day_quick_update', date_str=record.date) }}" method="POST"
                         class="m-0 p-0 d-flex flex-column flex-md-row align-items-center justify-content-center gap-3">
+                        {% if record.periods|length > 2 %}
+                        <div class="d-flex flex-column gap-1 align-items-center">
+                            {% for p in record.periods %}
+                            <div class="small fw-bold">
+                                Ent: {{ p.entry_time.strftime('%H:%M') }} - Saí: {{
+                                p.exit_time.strftime('%H:%M') if p.exit_time else '(trabalhando)' }}
+                            </div>
+                            {% endfor %}
+                        </div>
+                        {% else %}
                         {% set p1 = record.periods[0] if record.periods|length > 0 else None %}
                         {% set p2 = record.periods[1] if record.periods|length > 1 else None %}
 
@@ -163,12 +164,19 @@
                                 </div>
                             </div>
                         </div>
+                        {% endif %}
 
                         <div>
                             <button type="submit" class="btn btn-sm btn-success px-3">Salvar ✓</button>
                         </div>
                     </form>
-                    {% endif %}
+                </td>
+
+                <td>
+                    <textarea form="qf-{{ record.date }}" name="notes" rows="2" maxlength="500"
+                        class="form-control form-control-sm"
+                        style="font-size: 0.8rem; resize: vertical;"
+                        placeholder="Resumo do dia...">{{ record.notes or '' }}</textarea>
                 </td>
 
                 <td class="money-tooltip" data-hours="{{ record.worked_hours }}" data-expected="{{ record.expected_hours }}">{{ record.worked_hours |
@@ -465,6 +473,87 @@
         });
 
         updateMoneyTooltips();
+
+        // --- Bulk save: any "Salvar" button submits every row the user touched. ---
+        const tbody = document.querySelector('table tbody');
+        if (tbody) {
+            const markDirty = (tr) => {
+                if (!tr || tr.dataset.dirty === 'true') return;
+                tr.dataset.dirty = 'true';
+                tr.classList.add('row-dirty');
+            };
+
+            tbody.addEventListener('input', (e) => {
+                if (e.target.matches('input[name="entry_time[]"], input[name="exit_time[]"], textarea[name="notes"]')) {
+                    markDirty(e.target.closest('tr[data-date]'));
+                }
+            });
+            tbody.addEventListener('change', (e) => {
+                if (e.target.matches('input[name="entry_time[]"], input[name="exit_time[]"]')) {
+                    markDirty(e.target.closest('tr[data-date]'));
+                }
+            });
+
+            tbody.addEventListener('click', async (e) => {
+                const btn = e.target.closest('button[type="submit"]');
+                if (!btn || !btn.closest('tr[data-date]')) return;
+                e.preventDefault();
+
+                const dirtyRows = Array.from(tbody.querySelectorAll('tr[data-dirty="true"]'));
+                if (dirtyRows.length === 0) {
+                    window.location.href = '/';
+                    return;
+                }
+
+                const payload = { rows: dirtyRows.map(tr => {
+                    const row = { date: tr.dataset.date };
+                    const entryInputs = tr.querySelectorAll('input[name="entry_time[]"]');
+                    const exitInputs = tr.querySelectorAll('input[name="exit_time[]"]');
+                    if (entryInputs.length > 0) {
+                        row.entries = Array.from(entryInputs).map(i => i.value);
+                        row.exits = Array.from(exitInputs).map(i => i.value);
+                    }
+                    const notesEl = tr.querySelector('textarea[name="notes"]');
+                    if (notesEl) row.notes = notesEl.value;
+                    return row;
+                }) };
+
+                const allButtons = tbody.querySelectorAll('button[type="submit"]');
+                allButtons.forEach(b => b.disabled = true);
+                btn.textContent = 'Salvando…';
+
+                try {
+                    const resp = await fetch('/day/bulk_update', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload),
+                    });
+                    const data = await resp.json().catch(() => ({}));
+                    if (resp.ok && data.status === 'ok') {
+                        window.location.href = '/';
+                    } else {
+                        const msg = (data && data.message) || resp.statusText;
+                        alert('Erro ao salvar: ' + msg);
+                        allButtons.forEach(b => b.disabled = false);
+                        btn.textContent = 'Salvar ✓';
+                    }
+                } catch (err) {
+                    alert('Erro ao salvar: ' + err);
+                    allButtons.forEach(b => b.disabled = false);
+                    btn.textContent = 'Salvar ✓';
+                }
+            });
+        }
     });
 </script>
+<style>
+    tr.row-dirty {
+        outline: 2px solid var(--bs-warning, #f9c74f);
+        outline-offset: -2px;
+    }
+    tr.row-dirty td:first-child::before {
+        content: "● ";
+        color: var(--bs-warning, #f9c74f);
+    }
+</style>
 {% endblock %}

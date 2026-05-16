@@ -1,4 +1,4 @@
-from flask import Blueprint, render_template, request, redirect, url_for, flash
+from flask import Blueprint, render_template, request, redirect, url_for, flash, jsonify
 from datetime import datetime, date
 from .models import db, Settings, DayRecord, TimePeriod
 from .core import get_settings, update_settings_all, auto_populate_days, get_history_with_balances, update_day_periods, get_dashboard_stats
@@ -42,26 +42,79 @@ def day_quick_update(date_str):
 
     day_record = DayRecord.query.get_or_404(day_date)
 
-    # Check if there are more than 2 periods already (shouldn't use quick edit)
-    if len(day_record.periods) > 2:
-        flash('Este dia tem mais de 2 períodos. Por favor, use a edição avançada.', 'warning')
-        return redirect(url_for('main.index'))
-
-    # Parse new periods from form
     entries = request.form.getlist('entry_time[]')
     exits = request.form.getlist('exit_time[]')
-    update_day_periods(day_record, entries, exits)
 
-    day_record.is_consolidated = True
+    # Time inputs are only rendered when the day has <= 2 periods.
+    # When entries is non-empty, the user submitted time edits.
+    if entries:
+        if len(day_record.periods) > 2:
+            flash('Este dia tem mais de 2 períodos. Períodos não foram alterados; use a edição avançada.', 'warning')
+        else:
+            update_day_periods(day_record, entries, exits)
+            day_record.is_consolidated = True
+
+    if 'notes' in request.form:
+        day_record.notes = request.form.get('notes', '').strip()
 
     try:
         db.session.commit()
-        flash(f'Períodos para {day_date.strftime("%d/%m/%Y")} atualizados com sucesso!', 'success')
+        flash(f'Dia {day_date.strftime("%d/%m/%Y")} salvo com sucesso!', 'success')
     except Exception as e:
         db.session.rollback()
         flash(f'Erro ao salvar edição rápida: {e}', 'danger')
 
     return redirect(url_for('main.index'))
+
+@bp.route('/day/bulk_update', methods=['POST'])
+def day_bulk_update():
+    data = request.get_json(silent=True) or {}
+    rows = data.get('rows', [])
+
+    updated = 0
+    errors = []
+
+    for r in rows:
+        date_str = r.get('date')
+        if not date_str:
+            continue
+        try:
+            day_date = datetime.strptime(date_str, '%Y-%m-%d').date()
+        except ValueError:
+            errors.append({'date': date_str, 'error': 'data inválida'})
+            continue
+
+        day_record = DayRecord.query.get(day_date)
+        if not day_record:
+            errors.append({'date': date_str, 'error': 'dia não encontrado'})
+            continue
+
+        entries = r.get('entries')
+        if entries is not None:
+            if len(day_record.periods) > 2:
+                errors.append({'date': date_str, 'error': 'mais de 2 períodos; horários não alterados — use edição avançada'})
+            else:
+                try:
+                    update_day_periods(day_record, entries, r.get('exits', []))
+                    if entries:
+                        day_record.is_consolidated = True
+                except Exception as e:
+                    errors.append({'date': date_str, 'error': f'erro nos horários: {e}'})
+                    continue
+
+        if 'notes' in r:
+            day_record.notes = (r.get('notes') or '').strip()
+
+        updated += 1
+
+    try:
+        db.session.commit()
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'status': 'error', 'message': str(e)}), 500
+
+    return jsonify({'status': 'ok', 'updated': updated, 'errors': errors})
+
 
 @bp.route('/day/<string:date_str>', methods=['GET', 'POST'])
 def day_edit(date_str):

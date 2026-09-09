@@ -62,7 +62,7 @@ fun SetupScreen(
             value = value,
             onValueChange = { value = it },
             label = { Text("URL base") },
-            placeholder = { Text("https://ponto.exemplo  ·  http://100.70.0.10") },
+            placeholder = { Text("https://exemplo.invalid  ·  http://100.70.0.10") },
             singleLine = true,
             isError = validation is BaseUrlValidation.Malformed ||
                 validation is BaseUrlValidation.CleartextNotAllowed,

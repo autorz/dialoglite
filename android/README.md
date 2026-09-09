@@ -19,9 +19,9 @@ Formatos aceitos (endereços abaixo são **exemplos fictícios** — o endereço
 de cada instância você digita na tela):
 
 ```
-https://ponto.exemplo          # atrás de um proxy com TLS
+https://exemplo.invalid        # atrás de um proxy com TLS
 http://100.70.0.10             # IP da mesh, HTTP em claro
-100.70.0.10:8000               # sem esquema = http://
+10.1.2.3:8000                  # sem esquema = http://
 ```
 
 **Nenhum endereço vem configurado: a tela de setup exige que você informe o

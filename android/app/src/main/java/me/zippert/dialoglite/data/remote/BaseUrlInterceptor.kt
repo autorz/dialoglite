@@ -8,10 +8,10 @@ import java.io.IOException
 import java.util.concurrent.atomic.AtomicReference
 
 /**
- * O endereco base e digitado pelo usuario em runtime (duas instancias — uma no
- * ymir, outra no attila — atendidas pelo mesmo APK), entao o Retrofit sobe com
- * uma base placeholder e este interceptor reescreve host/porta/esquema/prefixo
- * a cada chamada.
+ * O endereco base e digitado pelo usuario em runtime (sao duas instancias
+ * distintas, uma por pessoa, atendidas pelo mesmo APK), entao o Retrofit sobe
+ * com uma base placeholder e este interceptor reescreve host/porta/esquema/
+ * prefixo a cada chamada.
  */
 class BaseUrlInterceptor : Interceptor {
 

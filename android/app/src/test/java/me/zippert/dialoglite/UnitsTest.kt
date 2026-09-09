@@ -69,14 +69,14 @@ class BaseUrlParsingTest {
 
     @Test
     fun `assume http quando falta esquema`() {
-        assertEquals("http://ymir.local/", BaseUrlInterceptor.parse("ymir.local").toString())
+        assertEquals("http://servidor.exemplo/", BaseUrlInterceptor.parse("servidor.exemplo").toString())
     }
 
     @Test
     fun `preserva porta, https e prefixo de caminho`() {
-        assertEquals("http://100.70.38.0:8000/", BaseUrlInterceptor.parse("100.70.38.0:8000").toString())
-        assertEquals("https://dialog.zippert.me/", BaseUrlInterceptor.parse("https://dialog.zippert.me").toString())
-        assertEquals("https://host/ponto/", BaseUrlInterceptor.parse("https://host/ponto").toString())
+        assertEquals("http://100.70.0.10:8000/", BaseUrlInterceptor.parse("100.70.0.10:8000").toString())
+        assertEquals("https://ponto.exemplo/", BaseUrlInterceptor.parse("https://ponto.exemplo").toString())
+        assertEquals("https://host.exemplo/ponto/", BaseUrlInterceptor.parse("https://host.exemplo/ponto").toString())
     }
 
     @Test
@@ -91,10 +91,13 @@ class BaseUrlParsingTest {
  */
 class CleartextPolicyTest {
 
+    // Todos os enderecos daqui sao ficticios de proposito: o repositorio e
+    // publico, e endereco real de peer da mesh nao tem por que ser versionado.
+
     @Test
     fun `IP da mesh netbird e privado`() {
         // 100.70.0.0/16 mora dentro do CGNAT 100.64.0.0/10.
-        assertTrue(CleartextPolicy.isPrivateLiteral("100.70.139.105"))
+        assertTrue(CleartextPolicy.isPrivateLiteral("100.70.0.10"))
         assertTrue(CleartextPolicy.isPrivateLiteral("100.64.0.1"))
         assertTrue(CleartextPolicy.isPrivateLiteral("100.127.255.254"))
     }
@@ -102,8 +105,8 @@ class CleartextPolicyTest {
     @Test
     fun `faixas privadas classicas e loopback`() {
         assertTrue(CleartextPolicy.isPrivateLiteral("10.1.2.3"))
-        assertTrue(CleartextPolicy.isPrivateLiteral("192.168.11.5"))
-        assertTrue(CleartextPolicy.isPrivateLiteral("172.18.2.1"))
+        assertTrue(CleartextPolicy.isPrivateLiteral("192.168.1.20"))
+        assertTrue(CleartextPolicy.isPrivateLiteral("172.16.0.1"))
         assertTrue(CleartextPolicy.isPrivateLiteral("127.0.0.1"))
         assertTrue(CleartextPolicy.isPrivateLiteral("::1"))
         assertTrue(CleartextPolicy.isPrivateLiteral("fd00::1"))
@@ -138,14 +141,14 @@ class BaseUrlValidationTest {
 
     @Test
     fun `http em IP da mesh e aceito e marcado como cleartext`() {
-        val v = BaseUrlInterceptor.validate("http://100.70.139.105")
+        val v = BaseUrlInterceptor.validate("http://100.70.0.10")
         assertTrue(v is BaseUrlValidation.Valid)
         assertTrue((v as BaseUrlValidation.Valid).cleartext)
     }
 
     @Test
     fun `IP da mesh sem esquema assume http e passa`() {
-        val v = BaseUrlInterceptor.validate("100.70.139.105:8000")
+        val v = BaseUrlInterceptor.validate("100.70.0.10:8000")
         assertTrue(v is BaseUrlValidation.Valid)
         assertTrue((v as BaseUrlValidation.Valid).cleartext)
     }

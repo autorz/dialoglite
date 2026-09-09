@@ -34,8 +34,8 @@
          suppress, este aviso permanente esconderia um aviso novo de verdade. -->
     <base-config cleartextTrafficPermitted="true" tools:ignore="InsecureBaseConfiguration">
         <trust-anchors>
-            <!-- Só o repositório do sistema: os certificados são do wildcard
-                 público, e aceitar CA instalada pelo usuário abriria MITM sem
+            <!-- Só o repositório do sistema: os certificados vêm de CA
+                 pública, e aceitar CA instalada pelo usuário abriria MITM sem
                  necessidade nenhuma aqui. -->
             <certificates src="system" />
         </trust-anchors>

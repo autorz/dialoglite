@@ -26,9 +26,12 @@ import me.zippert.dialoglite.data.remote.BaseUrlInterceptor
 import me.zippert.dialoglite.data.remote.BaseUrlValidation
 
 /**
- * O endereco base e digitado pelo usuario: sao duas instancias distintas
- * (uma no ymir, outra no attila), uma por pessoa, e o mesmo APK atende as
- * duas. Nada de endereco embutido no binario.
+ * O endereco base e digitado pelo usuario: sao duas instancias distintas, uma
+ * por pessoa, e o mesmo APK atende as duas. Nenhum endereco vem configurado.
+ *
+ * O placeholder abaixo e FICTICIO de proposito: string literal vai parar no
+ * `classes.dex` de um APK publicado num repositorio publico, entao ele ensina
+ * o formato sem revelar host real da infra.
  */
 @Composable
 fun SetupScreen(
@@ -59,7 +62,7 @@ fun SetupScreen(
             value = value,
             onValueChange = { value = it },
             label = { Text("URL base") },
-            placeholder = { Text("https://ponto.exemplo  ·  http://100.70.0.1") },
+            placeholder = { Text("https://ponto.exemplo  ·  http://100.70.0.10") },
             singleLine = true,
             isError = validation is BaseUrlValidation.Malformed ||
                 validation is BaseUrlValidation.CleartextNotAllowed,

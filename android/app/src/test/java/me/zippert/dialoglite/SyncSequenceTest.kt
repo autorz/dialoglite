@@ -284,7 +284,7 @@ class SyncSequenceTest {
         val interceptor = BaseUrlInterceptor()
         val repo = DayRepository(
             dao = FakeDao(),
-            prefs = FakePreferences("http://ponto.exemplo"),
+            prefs = FakePreferences("http://exemplo.invalid"),
             api = ApiFactory.create(interceptor),
             baseUrlInterceptor = interceptor,
         )

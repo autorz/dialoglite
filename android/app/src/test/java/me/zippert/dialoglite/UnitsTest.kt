@@ -69,14 +69,14 @@ class BaseUrlParsingTest {
 
     @Test
     fun `assume http quando falta esquema`() {
-        assertEquals("http://servidor.exemplo/", BaseUrlInterceptor.parse("servidor.exemplo").toString())
+        assertEquals("http://servidor.invalid/", BaseUrlInterceptor.parse("servidor.invalid").toString())
     }
 
     @Test
     fun `preserva porta, https e prefixo de caminho`() {
-        assertEquals("http://100.70.0.10:8000/", BaseUrlInterceptor.parse("100.70.0.10:8000").toString())
-        assertEquals("https://ponto.exemplo/", BaseUrlInterceptor.parse("https://ponto.exemplo").toString())
-        assertEquals("https://host.exemplo/ponto/", BaseUrlInterceptor.parse("https://host.exemplo/ponto").toString())
+        assertEquals("http://10.1.2.3:8000/", BaseUrlInterceptor.parse("10.1.2.3:8000").toString())
+        assertEquals("https://exemplo.invalid/", BaseUrlInterceptor.parse("https://exemplo.invalid").toString())
+        assertEquals("https://exemplo.invalid/ponto/", BaseUrlInterceptor.parse("https://exemplo.invalid/ponto").toString())
     }
 
     @Test
@@ -126,7 +126,7 @@ class CleartextPolicyTest {
         // Mesmo que resolva pra IP privado: o DNS muda e a checagem viraria
         // decorativa. Cleartext exige o literal.
         assertFalse(CleartextPolicy.isPrivateLiteral("localhost"))
-        assertFalse(CleartextPolicy.isPrivateLiteral("ponto.exemplo"))
+        assertFalse(CleartextPolicy.isPrivateLiteral("exemplo.invalid"))
     }
 }
 
@@ -134,7 +134,7 @@ class BaseUrlValidationTest {
 
     @Test
     fun `https em nome de host e aceito sem alarde`() {
-        val v = BaseUrlInterceptor.validate("https://ponto.exemplo")
+        val v = BaseUrlInterceptor.validate("https://exemplo.invalid")
         assertTrue(v is BaseUrlValidation.Valid)
         assertFalse((v as BaseUrlValidation.Valid).cleartext)
     }
@@ -155,9 +155,9 @@ class BaseUrlValidationTest {
 
     @Test
     fun `http em nome de host e recusado`() {
-        val v = BaseUrlInterceptor.validate("http://ponto.exemplo")
+        val v = BaseUrlInterceptor.validate("http://exemplo.invalid")
         assertTrue(v is BaseUrlValidation.CleartextNotAllowed)
-        assertEquals("ponto.exemplo", (v as BaseUrlValidation.CleartextNotAllowed).host)
+        assertEquals("exemplo.invalid", (v as BaseUrlValidation.CleartextNotAllowed).host)
     }
 
     @Test

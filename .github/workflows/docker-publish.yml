@@ -136,8 +136,20 @@ jobs:
           # `set -o pipefail` o `yes` morre de SIGPIPE quando o sdkmanager
           # termina e o pipeline devolve 141, abortando o job por engano.
           printf 'y\n%.0s' $(seq 1 100) > "${RUNNER_TEMP}/sdk-accept.txt"
-          "$sdkmgr" "platforms;android-36" "build-tools;36.0.0" \
-            < "${RUNNER_TEMP}/sdk-accept.txt" > /dev/null
+          # A saída vai para arquivo só para conter as barras de progresso, não
+          # para esconder diagnóstico: warning/error do sdkmanager são
+          # reemitidos abaixo, e em caso de falha o log inteiro vai para o log
+          # do job. Warning tolerado tem que ficar visível.
+          sdklog="${RUNNER_TEMP}/sdkmanager.log"
+          if ! "$sdkmgr" "platforms;android-36" "build-tools;36.0.0" \
+               < "${RUNNER_TEMP}/sdk-accept.txt" > "$sdklog" 2>&1; then
+            echo "::error title=sdkmanager falhou::não consegui instalar platform 36 / build-tools 36."
+            cat "$sdklog"
+            exit 1
+          fi
+          if grep -iE '(^|[^a-z])(warning|deprecat)' "$sdklog"; then
+            echo "::warning title=sdkmanager reclamou::veja as linhas acima — toleradas, mas não silenciadas."
+          fi
           rm -f "${RUNNER_TEMP}/sdk-accept.txt"
 
           mapfile -t bts < <(find "$sdk/build-tools" -mindepth 1 -maxdepth 1 -type d | sort -V)

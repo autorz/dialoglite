@@ -55,6 +55,24 @@ class StatsResponse(BaseModel):
     stats_90d: StatWindowSchema = Field(..., description="Stats for the last 90 days")
     chart_data: List[ChartDataPoint] = Field(default_factory=list, description="Chart data points for the last 90 days")
 
+
+class CustomStatsQuery(BaseModel):
+    start: datetime.date = Field(..., description="Start of custom range (inclusive)")
+    end: datetime.date = Field(..., description="End of custom range (inclusive)")
+
+
+class CustomStatsResponse(BaseModel):
+    arrival_str: str = Field(..., description="Average arrival time within the range")
+    departure_str: str = Field(..., description="Average departure time within the range")
+    delta_float: float = Field(..., description="Average daily delta in hours")
+    delta_pretty: str = Field(..., description="Formatted average daily delta")
+    period_balance_float: float = Field(..., description="Accumulated saldo change inside the range (balance_at_end - balance_before_start)")
+    period_balance_pretty: str = Field(..., description="Formatted accumulated saldo change")
+    chart_data: List[ChartDataPoint] = Field(default_factory=list, description="Chart data points for the selected range")
+    start_date: datetime.date = Field(..., description="Echoed start of the range")
+    end_date: datetime.date = Field(..., description="Echoed end of the range")
+    days_in_range: int = Field(..., description="Inclusive number of days in the range")
+
 class UpdateDayRequest(BaseModel):
     notes: Optional[str] = Field(None, description="User notes for the day")
     manual_holiday: Optional[bool] = Field(None, description="Manually mark day as holiday")

@@ -5,18 +5,15 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Dia Log Lite</title>
+  <link rel="icon"
+    href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Ccircle cx='8' cy='8' r='7' fill='%231e1e2e' stroke='%2389b4fa' stroke-width='1.5'/%3E%3Cpath d='M8 4.2v4l2.6 1.6' stroke='%2389b4fa' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E">
   <!-- Use local Bootstrap CSS -->
   <link href="{{ url_for('static', filename='css/bootstrap.min.css') }}" rel="stylesheet">
   <!-- Optional custom css -->
   <style>
-    .weekend {
-      background-color: #f8f9fa;
-    }
-
-    .holiday {
-      background-color: #ffeeba;
-    }
-
+    /* .weekend / .holiday foram removidas: eram cores de tema claro e estavam
+       mortas -- as linhas usam .table-warning / .table-light / .table-consolidated,
+       que o catppuccin.css já trata. */
     .negative {
       color: #dc3545;
       font-weight: bold;
@@ -25,6 +22,35 @@
     .positive {
       color: #198754;
       font-weight: bold;
+    }
+
+    /* --- Mobile: alvos de toque de 44px (recomendação Apple/Android) --- */
+    @media (max-width: 767.98px) {
+
+      .form-control,
+      .form-select,
+      .btn,
+      .input-group-text {
+        min-height: 44px;
+      }
+
+      /* input de hora: o alvo real é o campo inteiro, então centraliza o texto
+         verticalmente em vez de deixá-lo colado no topo da caixa maior */
+      input[type="time"].form-control,
+      input[type="date"].form-control {
+        line-height: 1.8;
+      }
+
+      /* textarea não precisa de 44px de altura mínima por linha, mas o toque
+         inicial precisa de área */
+      textarea.form-control {
+        min-height: 44px;
+      }
+
+      /* botões dentro de input-group não devem crescer além do grupo */
+      .input-group>.btn {
+        min-height: 44px;
+      }
     }
   </style>
   <link href="{{ url_for('static', filename='css/catppuccin.css') }}" rel="stylesheet">

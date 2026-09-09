@@ -7,6 +7,7 @@ from .core import (
     update_settings_all,
     get_history_with_balances,
     get_dashboard_stats,
+    get_custom_range_stats,
     update_day_periods,
     auto_populate_days
 )
@@ -104,6 +105,33 @@ def get_stats_tool() -> dict:
         history, current_balance = get_history_with_balances()
         stats = get_dashboard_stats(history, current_balance)
         return stats
+
+@mcp.tool()
+def get_custom_stats_tool(start_date: str, end_date: str) -> dict:
+    """
+    Get dashboard-style statistics (avg arrival/departure, avg daily delta,
+    projected next-90-day balance) computed over an arbitrary date range.
+    Dates are inclusive and in YYYY-MM-DD format.
+    """
+    from datetime import datetime
+
+    sd = datetime.strptime(start_date, "%Y-%m-%d").date()
+    ed = datetime.strptime(end_date, "%Y-%m-%d").date()
+
+    if _flask_app is None:
+        raise RuntimeError("Flask app not configured")
+    with _flask_app.app_context():
+        history, _ = get_history_with_balances()
+        stats = get_custom_range_stats(history, sd, ed)
+        return {
+            "arrival_str": stats['arrival_str'],
+            "departure_str": stats['departure_str'],
+            "delta_float": stats['delta_float'],
+            "period_balance_float": stats['period_balance_float'],
+            "start_date": stats['start_date'].isoformat(),
+            "end_date": stats['end_date'].isoformat(),
+            "days_in_range": stats['days_in_range'],
+        }
 
 @mcp.tool()
 def get_day_record_tool(date_str: str) -> dict:

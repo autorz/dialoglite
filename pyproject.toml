@@ -1,6 +1,6 @@
 [project]
 name = "dialoglite"
-version = "1.1.0"
+version = "1.2.1"
 description = "Simple work hours and overtime tracking "
 readme = "README.md"
 requires-python = ">=3.12"

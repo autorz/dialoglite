@@ -16,17 +16,39 @@
 </div>
 
 
-<div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-end mb-3">
-    <div></div>
+<button class="btn btn-outline-secondary btn-sm w-100 mb-3 d-md-none" type="button"
+    data-bs-toggle="collapse" data-bs-target="#analyticsPanel" aria-expanded="false"
+    aria-controls="analyticsPanel">
+    Estatísticas e gráfico
+</button>
+
+<div class="collapse d-md-block" id="analyticsPanel">
+
+<div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-end mb-3 gap-2">
+    <div id="custom_range_panel" class="d-none align-items-center gap-2 flex-wrap">
+        <div class="input-group input-group-sm" style="width: 165px;">
+            <span class="input-group-text">De</span>
+            <input type="date" id="custom_start" class="form-control">
+        </div>
+        <div class="input-group input-group-sm" style="width: 165px;">
+            <span class="input-group-text">Até</span>
+            <input type="date" id="custom_end" class="form-control">
+        </div>
+        <button type="button" id="custom_apply" class="btn btn-sm btn-primary">Aplicar</button>
+        <small id="custom_status" class="text-muted"></small>
+    </div>
     <div class="btn-group btn-group-sm mt-2 mt-md-0 shadow-sm" role="group">
         <input type="radio" class="btn-check" name="btnradio_stats" id="btn_stats_7d" autocomplete="off" checked>
         <label class="btn btn-outline-secondary" for="btn_stats_7d">Base 7d</label>
-    
+
         <input type="radio" class="btn-check" name="btnradio_stats" id="btn_stats_30d" autocomplete="off">
         <label class="btn btn-outline-secondary" for="btn_stats_30d">Base 30d</label>
 
         <input type="radio" class="btn-check" name="btnradio_stats" id="btn_stats_90d" autocomplete="off">
         <label class="btn btn-outline-secondary" for="btn_stats_90d">Base 90d</label>
+
+        <input type="radio" class="btn-check" name="btnradio_stats" id="btn_stats_custom" autocomplete="off">
+        <label class="btn btn-outline-secondary" for="btn_stats_custom">Custom</label>
     </div>
 </div>
 
@@ -38,6 +60,7 @@
                 <h4 class="card-text fw-bold mb-0 stat-7d" style="font-size: 1.25rem;">{{ stats.stats_7d.arrival_str }}</h4>
                 <h4 class="card-text fw-bold mb-0 stat-30d d-none" style="font-size: 1.25rem;">{{ stats.stats_30d.arrival_str }}</h4>
                 <h4 class="card-text fw-bold mb-0 stat-90d d-none" style="font-size: 1.25rem;">{{ stats.stats_90d.arrival_str }}</h4>
+                <h4 class="card-text fw-bold mb-0 stat-custom d-none" data-metric="arrival_str" style="font-size: 1.25rem;">--:--</h4>
             </div>
         </div>
     </div>
@@ -48,6 +71,7 @@
                 <h4 class="card-text fw-bold mb-0 stat-7d" style="font-size: 1.25rem;">{{ stats.stats_7d.departure_str }}</h4>
                 <h4 class="card-text fw-bold mb-0 stat-30d d-none" style="font-size: 1.25rem;">{{ stats.stats_30d.departure_str }}</h4>
                 <h4 class="card-text fw-bold mb-0 stat-90d d-none" style="font-size: 1.25rem;">{{ stats.stats_90d.departure_str }}</h4>
+                <h4 class="card-text fw-bold mb-0 stat-custom d-none" data-metric="departure_str" style="font-size: 1.25rem;">--:--</h4>
             </div>
         </div>
     </div>
@@ -58,6 +82,7 @@
                 <h4 class="card-text fw-bold mb-0 money-tooltip stat-7d" style="font-size: 1.25rem;" data-hours="{{ stats.stats_7d.delta_float }}">{{ stats.stats_7d.delta_float | format_time(True) }}</h4>
                 <h4 class="card-text fw-bold mb-0 money-tooltip stat-30d d-none" style="font-size: 1.25rem;" data-hours="{{ stats.stats_30d.delta_float }}">{{ stats.stats_30d.delta_float | format_time(True) }}</h4>
                 <h4 class="card-text fw-bold mb-0 money-tooltip stat-90d d-none" style="font-size: 1.25rem;" data-hours="{{ stats.stats_90d.delta_float }}">{{ stats.stats_90d.delta_float | format_time(True) }}</h4>
+                <h4 class="card-text fw-bold mb-0 money-tooltip stat-custom d-none" data-metric="delta_pretty" style="font-size: 1.25rem;" data-hours="0">--:--</h4>
             </div>
         </div>
     </div>
@@ -68,6 +93,7 @@
                 <h4 class="card-text fw-bold mb-0 money-tooltip stat-7d {{ 'positive' if stats.stats_7d.forecast_90_float >= 0 else 'negative' }}" style="font-size: 1.25rem;" data-hours="{{ stats.stats_7d.forecast_90_float }}">{{ stats.stats_7d.forecast_90_float | format_balance }}</h4>
                 <h4 class="card-text fw-bold mb-0 money-tooltip stat-30d d-none {{ 'positive' if stats.stats_30d.forecast_90_float >= 0 else 'negative' }}" style="font-size: 1.25rem;" data-hours="{{ stats.stats_30d.forecast_90_float }}">{{ stats.stats_30d.forecast_90_float | format_balance }}</h4>
                 <h4 class="card-text fw-bold mb-0 money-tooltip stat-90d d-none {{ 'positive' if stats.stats_90d.forecast_90_float >= 0 else 'negative' }}" style="font-size: 1.25rem;" data-hours="{{ stats.stats_90d.forecast_90_float }}">{{ stats.stats_90d.forecast_90_float | format_balance }}</h4>
+                <h4 class="card-text fw-bold mb-0 money-tooltip stat-custom d-none" data-metric="period_balance_pretty" style="font-size: 1.25rem;" data-hours="0">--:--</h4>
             </div>
         </div>
     </div>
@@ -77,16 +103,20 @@
     <div class="col-12">
         <div class="card">
             <div class="card-body">
-                <h5 class="card-title">Saldo (Últimos 90 dias)</h5>
-                <canvas id="balanceChart" width="400" height="100"></canvas>
+                <h5 class="card-title" id="balanceChartTitle">Saldo (Últimos 90 dias)</h5>
+                <div style="position: relative; height: 240px; width: 100%;">
+                    <canvas id="balanceChart"></canvas>
+                </div>
             </div>
         </div>
     </div>
 </div>
 
+</div><!-- /#analyticsPanel -->
+
 
 <div class="table-responsive">
-    <table class="table table-bordered align-middle text-center">
+    <table class="table table-bordered align-middle text-center day-table">
         <thead class="table-dark">
             <tr>
                 <th style="width: 10%;">Data</th>
@@ -172,23 +202,23 @@
                     </form>
                 </td>
 
-                <td>
+                <td data-label="Observação">
                     <textarea form="qf-{{ record.date }}" name="notes" rows="2" maxlength="500"
                         class="form-control form-control-sm"
                         style="font-size: 0.8rem; resize: vertical;"
                         placeholder="Resumo do dia...">{{ record.notes or '' }}</textarea>
                 </td>
 
-                <td class="money-tooltip" data-hours="{{ record.worked_hours }}" data-expected="{{ record.expected_hours }}">{{ record.worked_hours |
+                <td class="money-tooltip" data-label="Trabalhado" data-hours="{{ record.worked_hours }}" data-expected="{{ record.expected_hours }}">{{ record.worked_hours |
                     format_time }}</td>
-                <td class="money-tooltip" data-hours="{{ record.expected_hours }}" data-expected="{{ record.expected_hours }}">{{ record.expected_hours
+                <td class="money-tooltip" data-label="Esperado" data-hours="{{ record.expected_hours }}" data-expected="{{ record.expected_hours }}">{{ record.expected_hours
                     | format_time }}</td>
-                    <td class="daily-delta-cell fw-bold money-tooltip" data-value="{{ record.daily_delta }}"
+                    <td class="daily-delta-cell fw-bold money-tooltip" data-label="Delta" data-value="{{ record.daily_delta }}"
                         data-date="{{ record.date.strftime('%Y-%m-%d') }}"
                         data-hours="{{ record.daily_delta }}">
                         {{ record.daily_delta | format_time(True) }}
                     </td>
-                <td class="accumulated-balance-cell fw-bold" data-value="{{ record.balance }}"
+                <td class="accumulated-balance-cell fw-bold" data-label="Saldo" data-value="{{ record.balance }}"
                     data-date="{{ record.date.strftime('%Y-%m-%d') }}">
                     {% if record.override is not none %}
                     <span class="badge bg-info text-dark money-tooltip" 
@@ -205,6 +235,12 @@
             {% endfor %}
         </tbody>
     </table>
+</div>
+
+<!-- Salvar único, fixo no rodapé (mobile). Aparece só quando há linha alterada.
+     Ele apenas dispara o botão de linha já existente, reaproveitando o bulk save. -->
+<div id="mobileSaveBar" class="d-md-none">
+    <button type="button" class="btn btn-success w-100" id="mobileSaveBtn" disabled>Nenhuma alteração</button>
 </div>
 {% endblock %}
 
@@ -308,11 +344,35 @@
         });
 
         const ctx = document.getElementById('balanceChart').getContext('2d');
-        const chartData = {{ stats.chart_data | tojson | safe }};
+        const balanceChartTitle = document.getElementById('balanceChartTitle');
+        const originalChartData = {{ stats.chart_data | tojson | safe }};
+        let chartData = originalChartData.slice();
         const monthlySalary = parseFloat(localStorage.getItem('monthly_salary')) || 0;
         const monthlyHours = parseFloat(localStorage.getItem('monthly_hours')) || 220.0;
-        
-        // Helper to calculate moving average
+
+        // Converte horas de saldo em dinheiro usando EXATAMENTE a mesma regra do
+        // tooltip: saldo positivo vale hora extra (1,5x), saldo negativo é
+        // descontado a 1x. Como a regra é diferente dos dois lados do zero, a
+        // escala em R$ não é um múltiplo linear da escala em horas -- é isso que
+        // o app entende por valor, então o eixo reflete a mesma conta.
+        function balanceToMoney(hours) {
+            if (monthlySalary <= 0) return 0;
+            const rate = monthlySalary / monthlyHours;
+            return hours > 0 ? hours * rate * 1.5 : hours * rate;
+        }
+
+        // Rótulo curto: o eixo é estreito no celular, então sem centavos.
+        function moneyAxisLabel(hours) {
+            const v = balanceToMoney(hours);
+            const sign = v < 0 ? '-' : '';
+            const abs = Math.abs(v);
+            if (abs >= 1000) {
+                return sign + 'R$ ' + (abs / 1000).toFixed(1).replace('.', ',') + 'k';
+            }
+            return sign + 'R$ ' + Math.round(abs).toLocaleString('pt-BR');
+        }
+
+        // Helper to calculate moving average over the current chartData
         function getMovingAverages(windowSize) {
             return chartData.map(function (d, i) {
                 let start = Math.max(0, i - (windowSize - (1)));
@@ -322,12 +382,14 @@
             });
         }
 
-        const labels = chartData.map(function (d) {
+        function chartLabel(d) {
             const parts = d.date.split('-');
             return parts[2] + '/' + parts[1];
-        });
+        }
+
+        const labels = chartData.map(chartLabel);
         const balances = chartData.map(function (d) { return d.balance; });
-        
+
         const initialMovingAverages = getMovingAverages(7);
 
         const chart = new Chart(ctx, {
@@ -354,11 +416,40 @@
             },
             options: {
                 responsive: true,
+                maintainAspectRatio: false,
                 scales: {
                     y: {
+                        position: 'left',
                         title: {
                             display: true,
                             text: 'Horas'
+                        }
+                    },
+                    // Eixo financeiro à direita. Só aparece se houver salário
+                    // configurado (o valor é local do navegador, por design do app).
+                    yMoney: {
+                        display: monthlySalary > 0,
+                        position: 'right',
+                        title: {
+                            display: true,
+                            text: 'R$'
+                        },
+                        grid: {
+                            // não duplica as linhas de grade do eixo de horas
+                            drawOnChartArea: false
+                        },
+                        // Espelha os limites do eixo de horas a cada update, pra
+                        // que as duas escalas descrevam sempre a MESMA curva.
+                        afterDataLimits: function (scale) {
+                            const y = scale.chart.scales.y;
+                            if (!y) return;
+                            scale.min = y.min;
+                            scale.max = y.max;
+                        },
+                        ticks: {
+                            callback: function (value) {
+                                return moneyAxisLabel(value);
+                            }
                         }
                     }
                 },
@@ -436,40 +527,127 @@
             });
         }
 
+        const customPanel = document.getElementById('custom_range_panel');
+        const customStart = document.getElementById('custom_start');
+        const customEnd = document.getElementById('custom_end');
+        const customApply = document.getElementById('custom_apply');
+        const customStatus = document.getElementById('custom_status');
+
+        function showVariant(variant) {
+            ['7d', '30d', '90d', 'custom'].forEach(v => {
+                document.querySelectorAll('.stat-' + v).forEach(el => {
+                    if (v === variant) el.classList.remove('d-none');
+                    else el.classList.add('d-none');
+                });
+            });
+        }
+
+        function setStatTitlesLabel(label, customMode) {
+            document.querySelectorAll('.title-stat').forEach(el => {
+                el.textContent = el.textContent.replace(/\(.*\)/, `(${label})`);
+            });
+            document.querySelectorAll('.title-proj').forEach(el => {
+                el.textContent = customMode
+                    ? `Saldo do período (${label})`
+                    : `Projeção 90d (Base ${label})`;
+            });
+        }
+
+        function applyChartData(data, windowSize, label, titleSuffix) {
+            chartData = data;
+            chart.data.labels = chartData.map(chartLabel);
+            chart.data.datasets[0].data = chartData.map(d => d.balance);
+            chart.data.datasets[1].data = getMovingAverages(windowSize);
+            chart.data.datasets[1].label = 'Média Móvel (' + label + ')';
+            if (balanceChartTitle && titleSuffix) {
+                balanceChartTitle.textContent = 'Saldo ' + titleSuffix;
+            }
+            chart.update();
+        }
+
+        function setDefaultCustomDates() {
+            const fmt = d => d.toISOString().slice(0, 10);
+            const t = new Date();
+            const s = new Date();
+            s.setDate(t.getDate() - 29);
+            if (!customStart.value) customStart.value = fmt(s);
+            if (!customEnd.value) customEnd.value = fmt(t);
+        }
+
+        function customRangeLabel(stats) {
+            const fmt = iso => { const p = iso.split('-'); return p[2] + '/' + p[1]; };
+            return fmt(stats.start_date) + ' → ' + fmt(stats.end_date);
+        }
+
+        let customStats = null; // last successful /api/stats/custom payload
+
         const baseRadios = document.querySelectorAll('input[name="btnradio_stats"]');
         baseRadios.forEach(radio => {
             radio.addEventListener('change', function(e) {
-                const baseStr = e.target.id === 'btn_stats_7d' ? '7d' : (e.target.id === 'btn_stats_30d' ? '30d' : '90d');
-                const baseVal = parseInt(baseStr); // 7, 30 or 90
-                
-                document.querySelectorAll('.title-stat').forEach(el => {
-                    el.textContent = el.textContent.replace(/\(.*\)/, `(${baseStr})`);
-                });
-                document.querySelectorAll('.title-proj').forEach(el => {
-                    el.textContent = `Projeção 90d (Base ${baseStr})`;
-                });
-            
-                document.querySelectorAll('.stat-7d').forEach(el => {
-                    if (baseStr === '7d') el.classList.remove('d-none');
-                    else el.classList.add('d-none');
-                });
-                document.querySelectorAll('.stat-30d').forEach(el => {
-                    if (baseStr === '30d') el.classList.remove('d-none');
-                    else el.classList.add('d-none');
-                });
-                document.querySelectorAll('.stat-90d').forEach(el => {
-                    if (baseStr === '90d') el.classList.remove('d-none');
-                    else el.classList.add('d-none');
-                });
+                const id = e.target.id;
+                if (id === 'btn_stats_custom') {
+                    customPanel.classList.remove('d-none');
+                    customPanel.classList.add('d-flex');
+                    setDefaultCustomDates();
+                    if (customStats) {
+                        const label = customRangeLabel(customStats);
+                        setStatTitlesLabel(label, true);
+                        showVariant('custom');
+                        applyChartData(customStats.chart_data, customStats.days_in_range, label, '(' + label + ')');
+                        updateMoneyTooltips();
+                    }
+                    // Else: keep current cards/chart until user clicks "Aplicar"
+                    return;
+                }
+                customPanel.classList.add('d-none');
+                customPanel.classList.remove('d-flex');
 
-                // Update Chart Moving Average
-                const newMovingAverages = getMovingAverages(baseVal);
-                chart.data.datasets[1].label = 'Média Móvel (' + baseStr + ')';
-                chart.data.datasets[1].data = newMovingAverages;
-                chart.update();
-
+                const baseStr = id === 'btn_stats_7d' ? '7d' : (id === 'btn_stats_30d' ? '30d' : '90d');
+                const baseVal = parseInt(baseStr);
+                setStatTitlesLabel(baseStr, false);
+                showVariant(baseStr);
+                applyChartData(originalChartData.slice(), baseVal, baseStr, '(Últimos 90 dias)');
                 updateMoneyTooltips();
             });
+        });
+
+        customApply.addEventListener('click', async () => {
+            const s = customStart.value;
+            const e = customEnd.value;
+            if (!s || !e) { customStatus.textContent = 'Informe início e fim'; return; }
+            if (e < s) { customStatus.textContent = 'Fim antes do início'; return; }
+            customStatus.textContent = 'Carregando…';
+            customApply.disabled = true;
+            try {
+                const resp = await fetch('/api/stats/custom?start=' + encodeURIComponent(s) + '&end=' + encodeURIComponent(e));
+                const data = await resp.json();
+                if (!resp.ok) { customStatus.textContent = data.message || resp.statusText; return; }
+                customStats = data;
+                document.querySelectorAll('.stat-custom').forEach(el => {
+                    const metric = el.dataset.metric;
+                    if (metric === 'arrival_str')  el.textContent = data.arrival_str;
+                    else if (metric === 'departure_str') el.textContent = data.departure_str;
+                    else if (metric === 'delta_pretty') {
+                        el.textContent = data.delta_pretty;
+                        el.setAttribute('data-hours', data.delta_float);
+                    } else if (metric === 'period_balance_pretty') {
+                        el.textContent = data.period_balance_pretty;
+                        el.setAttribute('data-hours', data.period_balance_float);
+                        el.classList.toggle('positive', data.period_balance_float >= 0);
+                        el.classList.toggle('negative', data.period_balance_float < 0);
+                    }
+                });
+                const label = customRangeLabel(data);
+                setStatTitlesLabel(label, true);
+                showVariant('custom');
+                applyChartData(data.chart_data, data.days_in_range, label, '(' + label + ')');
+                customStatus.textContent = data.days_in_range + ' dias';
+                updateMoneyTooltips();
+            } catch (err) {
+                customStatus.textContent = 'Erro: ' + err;
+            } finally {
+                customApply.disabled = false;
+            }
         });
 
         updateMoneyTooltips();
@@ -545,6 +723,36 @@
             });
         }
     });
+
+    // --- Barra de salvar fixa no mobile ---
+    document.addEventListener("DOMContentLoaded", function () {
+        const bar = document.getElementById('mobileSaveBar');
+        const btn = document.getElementById('mobileSaveBtn');
+        const tbody = document.querySelector('table tbody');
+        if (!bar || !btn || !tbody) return;
+
+        // a barra é sempre visível no mobile; o que muda é o botão ficar ativo
+        const armar = () => {
+            if (btn.disabled) {
+                btn.disabled = false;
+                btn.textContent = 'Salvar alterações';
+                bar.classList.add('is-armed');
+            }
+        };
+        tbody.addEventListener('input', armar);
+        tbody.addEventListener('change', armar);
+
+        btn.addEventListener('click', () => {
+            // Reaproveita o handler de bulk save já ligado ao tbody: basta clicar
+            // num botão de linha real. Nenhuma lógica de salvamento duplicada aqui.
+            const rowBtn = tbody.querySelector('button[type="submit"]');
+            if (rowBtn) {
+                btn.disabled = true;
+                btn.textContent = 'Salvando…';
+                rowBtn.click();
+            }
+        });
+    });
 </script>
 <style>
     tr.row-dirty {
@@ -554,6 +762,170 @@
     tr.row-dirty td:first-child::before {
         content: "● ";
         color: var(--bs-warning, #f9c74f);
+    }
+
+    /* Barra de salvar fixa: escondida até existir alteração pendente */
+    #mobileSaveBar {
+        position: fixed;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        z-index: 1030;
+        padding: .6rem .75rem calc(.6rem + env(safe-area-inset-bottom));
+        background: rgba(24, 24, 37, .95);
+        border-top: 1px solid rgba(205, 214, 244, .15);
+        transition: background-color .18s ease-out;
+    }
+
+    /* destaque discreto quando há algo pendente */
+    #mobileSaveBar.is-armed {
+        border-top-color: rgba(166, 227, 161, .45);
+    }
+
+    /* ===========================================================
+       Mobile: a tabela de 8 colunas (970px) vira um card por dia.
+       Feito 100% em CSS sobre a MESMA tabela, de propósito: o bulk
+       save, o dirty tracking e os tooltips continuam presos a
+       tr[data-date] e não precisaram ser tocados.
+       =========================================================== */
+    @media (max-width: 767.98px) {
+
+        /* não rola mais na horizontal */
+        .table-responsive {
+            overflow-x: visible;
+        }
+
+        .day-table,
+        .day-table tbody {
+            display: block;
+            width: 100%;
+        }
+
+        .day-table thead {
+            display: none;
+        }
+
+        .day-table tr {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            grid-template-areas:
+                "data data tipo"
+                "periodos periodos periodos"
+                "obs obs obs"
+                "trab delta saldo";
+            gap: .55rem .5rem;
+            align-items: center;
+            padding: .8rem;
+            margin-bottom: .8rem;
+            border: 1px solid rgba(205, 214, 244, .15);
+            border-radius: .6rem;
+        }
+
+        .day-table td {
+            display: block;
+            border: 0 !important;
+            padding: 0;
+            text-align: left;
+        }
+
+        .day-table td:nth-child(1) { grid-area: data; }
+        .day-table td:nth-child(2) { grid-area: tipo; text-align: right; }
+        .day-table td:nth-child(3) { grid-area: periodos; }
+        .day-table td:nth-child(4) { grid-area: obs; }
+        .day-table td:nth-child(5) { grid-area: trab; text-align: center; }
+        .day-table td:nth-child(6) { display: none; }  /* Esperado: derivável do Tipo */
+        .day-table td:nth-child(7) { grid-area: delta; text-align: center; }
+        .day-table td:nth-child(8) { grid-area: saldo; text-align: center; }
+
+        .day-table td[data-label]::before {
+            content: attr(data-label);
+            display: block;
+            font-size: .65rem;
+            text-transform: uppercase;
+            letter-spacing: .05em;
+            opacity: .55;
+            margin-bottom: .1rem;
+        }
+
+        /* períodos ocupam a largura do card */
+        .day-table td:nth-child(3) form,
+        .day-table td:nth-child(3) form>.d-flex.flex-column {
+            width: 100%;
+        }
+
+        .day-table td:nth-child(3) .input-group {
+            width: auto !important;
+            flex: 1 1 0;
+        }
+
+        /* o Salvar por linha some: quem salva é a barra fixa */
+        .day-table td:nth-child(3) button[type="submit"] {
+            display: none;
+        }
+
+        /* --- Cor da linha vai pro CARD, não pras células ---
+           O catppuccin.css pinta .table-warning > td / .table-light > td. Em
+           grid, cada td vira um retângulo solto flutuando dentro do card, então
+           aqui a tinta sobe pro <tr> e as células ficam transparentes. */
+        /* especificidade tem que superar `.table .table-warning > td` (0,2,1)
+           do catppuccin.css, que também usa !important -- daí o
+           `.table.day-table > tbody > tr > td` (0,2,3). */
+        .table.day-table>tbody>tr>td,
+        .table.day-table>tbody>tr:hover>td {
+            background-color: transparent !important;
+            background-image: none !important;
+        }
+
+        .table.day-table>tbody>tr.table-warning {
+            background-color: rgba(249, 226, 175, .1);
+            border-color: rgba(249, 226, 175, .3);
+        }
+
+        .table.day-table>tbody>tr.table-light {
+            background-color: var(--ctp-surface0, #313244);
+        }
+
+        .table.day-table>tbody>tr.table-consolidated {
+            background-color: rgba(137, 180, 250, .1);
+            border-color: rgba(137, 180, 250, .3);
+        }
+
+        /* data e badge alinhados no topo do card */
+        .day-table td:nth-child(1),
+        .day-table td:nth-child(2) {
+            align-self: start;
+        }
+
+        /* Cabeçalho do card numa linha só: data - dia da semana - Avançado.
+           Em container flex os <br> do template viram itens de largura zero e
+           param de quebrar linha, então não precisou mexer no HTML. */
+        .day-table td:nth-child(1) {
+            display: flex;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: .5rem;
+        }
+
+        .day-table td:nth-child(1) br {
+            display: none;
+        }
+
+        /* no card, "Avançado" é ação secundária: vira link discreto em vez de
+           uma caixa competindo com o badge do tipo de dia */
+        .day-table td:nth-child(1) .btn {
+            font-size: .78rem !important;
+            padding: .35rem .25rem !important;
+            margin-top: 0 !important;
+            border-color: transparent !important;
+            background: transparent !important;
+            text-decoration: underline;
+            text-underline-offset: .2em;
+        }
+
+        /* espaço pra barra fixa não cobrir o último card */
+        body {
+            padding-bottom: 5rem;
+        }
     }
 </style>
 {% endblock %}

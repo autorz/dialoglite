@@ -9,13 +9,16 @@ from .schemas import (
     UpdateDayRequest,
     MessageResponse,
     DayRecordSchema,
-    PeriodSchema
+    PeriodSchema,
+    CustomStatsQuery,
+    CustomStatsResponse,
 )
 from .core import (
     get_settings,
     update_settings_all,
     get_history_with_balances,
     get_dashboard_stats,
+    get_custom_range_stats,
     update_day_periods,
     auto_populate_days
 )
@@ -123,6 +126,32 @@ def get_stats_api():
     stats['stats_90d']['forecast_90_pretty'] = format_balance(stats['stats_90d']['forecast_90_float'], with_sign=True)
 
     return stats
+
+@api_bp.get(
+    "/stats/custom",
+    tags=[api_tag],
+    summary="Get dashboard statistics for a custom date range",
+    responses={"200": CustomStatsResponse, "400": MessageResponse}
+)
+def get_custom_stats_api(query: CustomStatsQuery):
+    if query.end < query.start:
+        return MessageResponse(message="end must be on or after start").model_dump(mode="json"), 400
+
+    history, _ = get_history_with_balances()
+    stats = get_custom_range_stats(history, query.start, query.end)
+
+    return CustomStatsResponse(
+        arrival_str=stats['arrival_str'],
+        departure_str=stats['departure_str'],
+        delta_float=stats['delta_float'],
+        delta_pretty=format_balance(stats['delta_float'], with_sign=True),
+        period_balance_float=stats['period_balance_float'],
+        period_balance_pretty=format_balance(stats['period_balance_float'], with_sign=True),
+        chart_data=stats['chart_data'],
+        start_date=stats['start_date'],
+        end_date=stats['end_date'],
+        days_in_range=stats['days_in_range'],
+    ).model_dump(mode="json")
 
 class DatePathParams(BaseModel):
     date: datetime.date = Field(..., description="Date to update in YYYY-MM-DD format")

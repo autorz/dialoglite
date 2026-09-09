@@ -14,7 +14,7 @@
 set -euo pipefail
 
 ANDROID_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-IMAGE_TAG="${DIALOGLITE_BUILD_IMAGE:-dialoglite-android-build:jdk21-sdk35}"
+IMAGE_TAG="${DIALOGLITE_BUILD_IMAGE:-dialoglite-android-build:jdk21-sdk36}"
 CACHE_DIR="${ANDROID_DIR}/.build-cache"
 
 if [[ $# -eq 0 ]]; then

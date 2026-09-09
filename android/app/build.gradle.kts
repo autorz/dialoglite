@@ -36,15 +36,15 @@ val hasReleaseSigning = listOf(
 
 android {
     namespace = "me.zippert.dialoglite"
-    compileSdk = 35
+    compileSdk = 36
     // Pinado: sem isto o AGP pede a sua versao minima (34.0.0) e tenta
     // instalar dentro do container, onde o SDK e read-only de proposito.
-    buildToolsVersion = "35.0.0"
+    buildToolsVersion = "36.0.0"
 
     defaultConfig {
         applicationId = "me.zippert.dialoglite"
         minSdk = 26
-        targetSdk = 35
+        targetSdk = 36
         versionCode = 1
         versionName = "1.0.0"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
@@ -122,8 +122,6 @@ dependencies {
     implementation(libs.androidx.compose.material3)
     implementation(libs.androidx.compose.material.icons.extended)
     debugImplementation(libs.androidx.compose.ui.tooling)
-
-    implementation(libs.androidx.navigation.compose)
 
     implementation(libs.androidx.room.runtime)
     implementation(libs.androidx.room.ktx)

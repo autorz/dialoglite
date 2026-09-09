@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  O endereco base e configurado pelo usuario e pode ser um host da mesh
+  netbird sem TLS (http://100.70.x.y:8000) — o agente de rede ainda esta
+  decidindo se a exposicao final sai por Caddy com HTTPS. Cleartext fica
+  permitido pra nao travar nesse ponto; a confidencialidade vem do tunel
+  WireGuard da mesh, nao do TLS.
+
+  Se/quando o endpoint for HTTPS por Caddy com o wildcard *.zippert.me,
+  basta trocar cleartextTrafficPermitted para false.
+-->
+<network-security-config>
+    <base-config cleartextTrafficPermitted="true">
+        <trust-anchors>
+            <certificates src="system" />
+            <certificates src="user" />
+        </trust-anchors>
+    </base-config>
+</network-security-config>

@@ -1,0 +1,19 @@
+# Caches do build containerizado (docker/build.sh) — nunca versionar.
+.build-cache/
+.gradle/
+build/
+app/build/
+local.properties
+keystore.properties
+*.keystore
+*.jks
+captures/
+.externalNativeBuild/
+.cxx/
+
+# O .gitignore da raiz tem `data/` (o diretorio SQLite do app Flask), e esse
+# padrao casa com QUALQUER diretorio `data` — inclusive o pacote Kotlin
+# `me.zippert.dialoglite.data`, que sumiria do commit em silencio.
+# A negacao vive aqui de proposito: o .gitignore da raiz pertence a outro dono.
+!app/src/main/java/me/zippert/dialoglite/data/
+!app/src/main/java/me/zippert/dialoglite/data/**

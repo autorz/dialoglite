@@ -15,17 +15,25 @@ Na primeira abertura o app pede a **URL base**; depois ela fica na engrenagem da
 barra de título. Aceita `host`, `host:porta` ou URL completa — sem esquema,
 assume `http://`.
 
+Formatos aceitos (endereços abaixo são **exemplos fictícios** — o endereço real
+de cada instância você digita na tela):
+
 ```
-https://time.zippert.me        # instância atrás do Caddy, com TLS
-http://100.70.139.105          # instância na mesh, HTTP em claro
-100.70.139.105:8000            # sem esquema = http://
+https://ponto.exemplo          # atrás de um proxy com TLS
+http://100.70.0.10             # IP da mesh, HTTP em claro
+100.70.0.10:8000               # sem esquema = http://
 ```
 
-**Não há endereço embutido no binário, e não há credencial de espécie alguma.**
-São duas instâncias distintas (uma no ymir, outra no attila), uma por pessoa,
-cada uma com seu banco — e o mesmo APK atende as duas. O servidor não tem login:
-quem controla o acesso é a **mesh netbird**. O APK é publicado como asset de
-release num repositório público, então nada de segredo pode morar aqui.
+**Nenhum endereço vem configurado: a tela de setup exige que você informe o
+seu.** O app também não guarda credencial de espécie alguma. São duas
+instâncias distintas, uma por pessoa, cada uma com seu banco — e o mesmo APK
+atende as duas. O servidor não tem login: quem controla o acesso é a **mesh
+netbird**. O APK é publicado como asset de release num repositório público,
+então nada de segredo — nem endereço real de host — pode morar aqui.
+
+(O campo de texto tem um *placeholder* de exemplo, que por ser string literal
+vai parar no binário. Por isso ele é fictício de propósito: placeholder não é
+default, mas é publicado.)
 
 Consequência prática: **fora da mesh o servidor fica inalcançável, e isso é
 estado normal** — não é erro. As edições ficam na fila e sobem sozinhas.

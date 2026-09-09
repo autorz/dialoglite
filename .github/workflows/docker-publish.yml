@@ -46,10 +46,14 @@ jobs:
             type=sha
             latest
 
+      # context é ./server (monorepo): o Dockerfile termina em `COPY . /app`,
+      # então um context na raiz arrastaria android/ (caches do Gradle, saídas
+      # de build, keystore de quem estiver testando local) para dentro da
+      # imagem publicada. O .dockerignore também vive em server/.
       - name: Build and push Docker image
         uses: docker/build-push-action@v5
         with:
-          context: .
+          context: ./server
           push: true
           platforms: linux/amd64,linux/arm64
           tags: ${{ steps.meta.outputs.tags }}

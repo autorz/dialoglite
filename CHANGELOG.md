@@ -5,6 +5,21 @@ Todas as mudanças relevantes deste projeto são documentadas neste arquivo.
 O formato segue [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e o
 projeto adota [Versionamento Semântico](https://semver.org/lang/pt-BR/).
 
+## [Não publicado]
+
+### Alterado
+- **Repositório reorganizado como monorepo.** Todo o app Flask desceu para
+  `server/` (`app/`, `tests/`, `main.py`, `asgi.py`, `pyproject.toml`,
+  `uv.lock`, `Dockerfile`, `.dockerignore`, `docker-compose.yml`,
+  `.env.example`, e o README do app). A raiz passa a hospedar só o que é
+  transversal: `CHANGELOG.md`, `.gitignore`, `.github/` e um `README.md` de
+  índice do monorepo. Abre espaço para o cliente Android em `android/`.
+- O **contexto de build da imagem passou a ser `./server`** no workflow de
+  publicação. O `Dockerfile` termina em `COPY . /app`, então um contexto na
+  raiz arrastaria `android/` para dentro da imagem publicada. Nome e tags da
+  imagem (`ghcr.io/autorz/dialoglite`) estão **inalterados** — os hosts em
+  produção continuam puxando exatamente o mesmo artefato.
+
 ## [1.2.1] - 2026-09-08
 
 ### Alterado

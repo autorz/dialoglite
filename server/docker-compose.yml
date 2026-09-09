@@ -1,8 +1,11 @@
-version: '3.8'
+# O nome do projeto é fixado: sem isto o compose o derivaria do
+# diretório e passaria a ser "server" depois da mudança para monorepo.
+name: dialoglite
 
 services:
   app:
-    build: .
+    build:
+      context: .
     container_name: dialoglite
     ports:
       - "8000:8000"

@@ -38,6 +38,9 @@ projeto adota [Versionamento Semântico](https://semver.org/lang/pt-BR/).
   registrado que deixa de casar **reprova o job** — aceite órfão é a mesma
   dívida silenciosa que o arquivo evita.
 
+- **Cliente Android** em `android/`, publicado como asset de release. Ver
+  [`android/README.md`](android/README.md).
+
 ### Corrigido
 - `.gitignore` da raiz: `data/` (o diretório SQLite do Flask) casava com
   **qualquer** diretório chamado `data` em qualquer profundidade — o pacote

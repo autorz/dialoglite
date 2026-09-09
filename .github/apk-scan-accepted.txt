@@ -27,3 +27,6 @@
 #
 # Exemplo (comentado; descomentar só quando for verdade):
 # 100\.70\.[0-9] | fulano | 2026-01-01 | Placeholder não-roteável na tela de setup.
+
+100\.70\.[0-9] | team-lead | 2026-09-08 | Placeholder da tela de setup: a única string 100.70.x no APK é `http://100.70.0.1`, exemplo não-roteável, não é peer de ninguém. Verificado contra o APK release: os IPs reais da frota não chegam ao binário.
+netbird | monorepo-ci | 2026-09-08 | Texto de UI em português explicando o modelo de confiança ("Conecte-se à mesh netbird e sincronize"). Nomeia o produto, não um endereço. PENDENTE de confirmação do team-lead.

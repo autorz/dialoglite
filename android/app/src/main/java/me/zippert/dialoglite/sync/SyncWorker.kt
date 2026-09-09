@@ -22,8 +22,12 @@ class SyncWorker(
                 Result.success()
 
             // Inalcancavel e o estado NORMAL fora da mesh netbird, nao um erro.
-            // Retry com backoff; a fila continua intacta.
-            is SyncOutcome.Unreachable -> Result.retry()
+            // Tenta algumas vezes com backoff exponencial (30s, 1m, 2m, 4m ~=
+            // 8 min de janela) e para. Insistir alem disso so gasta bateria com
+            // o celular longe da mesh: o worker periodico de 6h e a abertura do
+            // app cuidam do resto, e a fila continua intacta.
+            is SyncOutcome.Unreachable ->
+                if (runAttemptCount < MAX_UNREACHABLE_RETRIES) Result.retry() else Result.success()
 
             is SyncOutcome.Failed -> if (runAttemptCount < MAX_RETRIES) Result.retry() else Result.failure()
 
@@ -35,5 +39,6 @@ class SyncWorker(
 
     private companion object {
         const val MAX_RETRIES = 5
+        const val MAX_UNREACHABLE_RETRIES = 4
     }
 }

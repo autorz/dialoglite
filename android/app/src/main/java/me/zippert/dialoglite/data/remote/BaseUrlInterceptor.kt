@@ -23,6 +23,10 @@ class BaseUrlInterceptor : Interceptor {
 
     override fun intercept(chain: Interceptor.Chain): Response {
         val base = current.get() ?: throw NoBaseUrlException()
+        // Segunda linha de defesa: a tela de configuracao ja recusa cleartext
+        // pra destino nao-privado, mas um valor gravado por uma versao antiga
+        // (ou editado por fora) nao pode escapar por aqui.
+        if (!CleartextPolicy.isAllowed(base)) throw InsecureBaseUrlException(base.host)
         val request = chain.request()
 
         // O path do Retrofit e relativo ("api/history"); ele foi resolvido
@@ -54,7 +58,27 @@ class BaseUrlInterceptor : Interceptor {
             val withSlash = if (withScheme.endsWith("/")) withScheme else "$withScheme/"
             return withSlash.toHttpUrlOrNull()
         }
+
+        /**
+         * Valida o que o usuario digitou. As duas formas convivem na mesma
+         * configuracao: `https://<host>` e `http://<ip>[:porta]` da mesh.
+         */
+        fun validate(raw: String): BaseUrlValidation {
+            if (raw.isBlank()) return BaseUrlValidation.Empty
+            val url = parse(raw) ?: return BaseUrlValidation.Malformed
+            if (url.host.isBlank()) return BaseUrlValidation.Malformed
+            if (!CleartextPolicy.isAllowed(url)) return BaseUrlValidation.CleartextNotAllowed(url.host)
+            return BaseUrlValidation.Valid(url, cleartext = !url.isHttps)
+        }
     }
+}
+
+sealed interface BaseUrlValidation {
+    data object Empty : BaseUrlValidation
+    data object Malformed : BaseUrlValidation
+    /** HTTP em claro para destino que nao e IP privado/mesh. */
+    data class CleartextNotAllowed(val host: String) : BaseUrlValidation
+    data class Valid(val url: HttpUrl, val cleartext: Boolean) : BaseUrlValidation
 }
 
 /** Nao ha endereco configurado ainda — estado normal no primeiro uso. */

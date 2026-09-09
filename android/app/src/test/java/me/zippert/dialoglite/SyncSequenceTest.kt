@@ -1,5 +1,6 @@
 package me.zippert.dialoglite
 
+import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.json.Json
@@ -12,6 +13,7 @@ import me.zippert.dialoglite.data.SyncOutcome
 import me.zippert.dialoglite.data.local.PeriodValue
 import me.zippert.dialoglite.data.remote.ApiFactory
 import me.zippert.dialoglite.data.remote.BaseUrlInterceptor
+import okhttp3.mockwebserver.Dispatcher
 import okhttp3.mockwebserver.MockResponse
 import okhttp3.mockwebserver.MockWebServer
 import okhttp3.mockwebserver.RecordedRequest
@@ -41,7 +43,11 @@ class SyncSequenceTest {
         val interceptor = BaseUrlInterceptor()
         repository = DayRepository(
             dao = dao,
-            prefs = FakePreferences(server.url("/").toString()),
+            // Literal de loopback, nao `server.url("/")`: aquele devolve
+            // `http://localhost:...`, e a CleartextPolicy recusa NOME em
+            // cleartext de proposito. Aqui o endereco imita o de producao
+            // (IP literal na mesh).
+            prefs = FakePreferences("http://127.0.0.1:${server.port}/"),
             api = ApiFactory.create(interceptor),
             baseUrlInterceptor = interceptor,
         )
@@ -238,6 +244,58 @@ class SyncSequenceTest {
         assertTrue(outcome is SyncOutcome.Unreachable)
         assertEquals(1, dao.pending.value.size)
         assertEquals(0, dao.pending.value.single().attempts)
+    }
+
+    /**
+     * Corrida: o usuario salva de novo o mesmo dia enquanto o POST esta no ar.
+     * A resposta OK e da edicao ANTIGA — apagar cego perderia a nova, que nunca
+     * foi enviada. A pendencia tem que sobreviver.
+     *
+     * A segunda edicao entra de dentro do dispatcher do MockWebServer, no exato
+     * instante em que o bulk_update chega: deterministico, sem sleep.
+     */
+    @Test
+    fun `edicao salva durante o envio nao e apagada pela resposta`() = runTest {
+        repository.queueEdit("2026-09-08", notes = "antiga", periods = null)
+
+        server.dispatcher = object : Dispatcher() {
+            override fun dispatch(request: RecordedRequest): MockResponse = when (request.path) {
+                "/day/bulk_update" -> {
+                    runBlocking { repository.queueEdit("2026-09-08", notes = "nova", periods = null) }
+                    MockResponse().setResponseCode(200)
+                        .setBody("""{"status":"ok","updated":1,"errors":[]}""")
+                }
+                else -> MockResponse().setResponseCode(200).setBody(historyBody())
+            }
+        }
+
+        repository.sync()
+
+        assertEquals("nova", dao.pending.value.single().notes)
+    }
+
+    /**
+     * Defesa em profundidade: a tela de configuracao recusa cleartext pra nome
+     * de host, mas um valor gravado por versao antiga tem que morrer no
+     * interceptor tambem — antes de virar requisicao na rede.
+     */
+    @Test
+    fun `cleartext pra hostname morre no interceptor`() = runTest {
+        val interceptor = BaseUrlInterceptor()
+        val repo = DayRepository(
+            dao = FakeDao(),
+            prefs = FakePreferences("http://ponto.exemplo"),
+            api = ApiFactory.create(interceptor),
+            baseUrlInterceptor = interceptor,
+        )
+
+        val outcome = repo.sync()
+
+        assertTrue("esperava Failed, veio $outcome", outcome is SyncOutcome.Failed)
+        // Nao pode ser tratado como "inalcancavel": erro de configuracao nao
+        // melhora com retry.
+        assertFalse(outcome is SyncOutcome.Unreachable)
+        assertEquals(0, server.requestCount)
     }
 
     /** Edicoes sucessivas do mesmo dia colapsam numa linha so. */

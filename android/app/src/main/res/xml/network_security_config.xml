@@ -1,19 +1,43 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
-  O endereco base e configurado pelo usuario e pode ser um host da mesh
-  netbird sem TLS (http://100.70.x.y:8000) — o agente de rede ainda esta
-  decidindo se a exposicao final sai por Caddy com HTTPS. Cleartext fica
-  permitido pra nao travar nesse ponto; a confidencialidade vem do tunel
-  WireGuard da mesh, nao do TLS.
+  CLEARTEXT: por que este arquivo é permissivo e onde o escopo é realmente
+  estreitado.
 
-  Se/quando o endpoint for HTTPS por Caddy com o wildcard *.zippert.me,
-  basta trocar cleartextTrafficPermitted para false.
+  Uma das instâncias é servida como `http://100.70.x.y` — IP da mesh netbird,
+  sem TLS, porque o tráfego já vai cifrado por dentro do WireGuard. A outra é
+  `https://<host>`. O mesmo APK atende as duas, e o endereço é digitado pelo
+  usuário em RUNTIME.
+
+  O `networkSecurityConfig` casa por hostname exato ou sufixo de domínio — ele
+  não entende faixa CIDR. Não há como declarar aqui "cleartext só para
+  100.70.0.0/16": a faixa tem 65.536 endereços e nenhum deles é conhecido em
+  build time. As duas únicas saídas declarativas seriam liberar cleartext geral
+  ou proibir cleartext e inviabilizar a instância sem TLS.
+
+  Escolha: o XML libera o TRANSPORTE, e quem estreita o ESCOPO é
+  `data/remote/CleartextPolicy.kt` — cleartext só para literal de IP privado ou
+  CGNAT (10/8, 172.16/12, 192.168/16, 100.64/10, 127/8, 169.254/16 e os
+  equivalentes IPv6). Nome de host e IP público em `http://` são recusados na
+  tela de configuração E no interceptor, antes de virar requisição.
+
+  TRADE-OFF, explícito: a checagem é do app, não da plataforma. Código nativo
+  ou uma biblioteca de terceiros que abrisse socket por fora do OkHttp não
+  passaria por ela. Para o que este app é — uma dependência de rede, sem SDK de
+  terceiro — o risco é aceito conscientemente.
+
+  Quando as duas instâncias estiverem atrás do Caddy com TLS, a mudança é
+  trocar `cleartextTrafficPermitted` para false e apagar o CleartextPolicy.
 -->
-<network-security-config>
-    <base-config cleartextTrafficPermitted="true">
+<network-security-config xmlns:tools="http://schemas.android.com/tools">
+    <!-- InsecureBaseConfiguration silenciado de propósito: o motivo está no
+         comentário acima, e a restrição real vive no CleartextPolicy. Sem o
+         suppress, este aviso permanente esconderia um aviso novo de verdade. -->
+    <base-config cleartextTrafficPermitted="true" tools:ignore="InsecureBaseConfiguration">
         <trust-anchors>
+            <!-- Só o repositório do sistema: os certificados são do wildcard
+                 público, e aceitar CA instalada pelo usuário abriria MITM sem
+                 necessidade nenhuma aqui. -->
             <certificates src="system" />
-            <certificates src="user" />
         </trust-anchors>
     </base-config>
 </network-security-config>

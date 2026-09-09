@@ -19,6 +19,7 @@ import me.zippert.dialoglite.data.prefs.PreferencesSource
 import me.zippert.dialoglite.data.remote.ApiFactory
 import me.zippert.dialoglite.data.remote.BaseUrlInterceptor
 import me.zippert.dialoglite.data.remote.DiaLogApi
+import me.zippert.dialoglite.data.remote.InsecureBaseUrlException
 import me.zippert.dialoglite.data.remote.NoBaseUrlException
 import me.zippert.dialoglite.data.remote.dto.BulkRowDto
 import me.zippert.dialoglite.data.remote.dto.BulkUpdateRequest
@@ -151,6 +152,9 @@ class DayRepository(
             api.getHistory()
         } catch (e: NoBaseUrlException) {
             return SyncOutcome.NotConfigured
+        } catch (e: InsecureBaseUrlException) {
+            // Erro de configuracao, nao de rede: reagendar nao conserta.
+            return SyncOutcome.Failed(e.friendlyMessage())
         } catch (e: IOException) {
             return SyncOutcome.Unreachable(e.friendlyMessage())
         } catch (e: HttpException) {
@@ -167,6 +171,8 @@ class DayRepository(
         val rows = queue.map { it.toRow() }
         val response = try {
             api.bulkUpdate(BulkUpdateRequest(rows))
+        } catch (e: InsecureBaseUrlException) {
+            return SyncOutcome.Failed(e.friendlyMessage())
         } catch (e: IOException) {
             return SyncOutcome.Unreachable(e.friendlyMessage())
         } catch (e: HttpException) {
@@ -185,13 +191,17 @@ class DayRepository(
         var pushed = 0
         for (edit in queue) {
             val error = errorsByDate[edit.date]
+            // `updatedAt` e o guarda contra a corrida: se o usuario salvou de
+            // novo o mesmo dia enquanto o POST estava no ar, a linha mudou e
+            // nem o delete nem a marcacao de falha a alcancam.
             if (error == null) {
-                dao.deletePending(edit.date)
+                dao.deletePendingIfUnchanged(edit.date, edit.updatedAt)
                 pushed++
             } else {
                 val attempts = edit.attempts + 1
                 dao.markPendingFailure(
                     date = edit.date,
+                    updatedAt = edit.updatedAt,
                     attempts = attempts,
                     error = error,
                     blocked = BulkErrorPolicy.isPermanent(error) || attempts >= MAX_ATTEMPTS,

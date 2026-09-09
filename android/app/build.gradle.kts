@@ -1,4 +1,5 @@
 import java.io.FileInputStream
+import java.time.Duration
 import java.util.Properties
 
 plugins {
@@ -104,6 +105,16 @@ android {
 
     sourceSets {
         getByName("androidTest").assets.srcDir("$projectDir/schemas")
+    }
+}
+
+// Teto duro no teste: um teste pendurado nao pode travar a janela de CI em
+// silencio — melhor falhar em 5 min com o nome do culpado no log.
+tasks.withType<Test>().configureEach {
+    timeout.set(Duration.ofMinutes(5))
+    testLogging {
+        events("failed", "skipped")
+        exceptionFormat = org.gradle.api.tasks.testing.logging.TestExceptionFormat.FULL
     }
 }
 

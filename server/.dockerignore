@@ -1,6 +1,12 @@
 .venv
 __pycache__
 *.pyc
+# Caches de ferramenta: o .gitignore os esconde do git, mas NÃO do contexto de
+# build — sem isto, quem roda pytest antes de buildar carimba o cache dentro
+# da imagem publicada.
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
 .git
 .github
 data/

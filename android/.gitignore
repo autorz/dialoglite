@@ -11,9 +11,13 @@ captures/
 .externalNativeBuild/
 .cxx/
 
-# O .gitignore da raiz tem `data/` (o diretorio SQLite do app Flask), e esse
-# padrao casa com QUALQUER diretorio `data` — inclusive o pacote Kotlin
-# `me.zippert.dialoglite.data`, que sumiria do commit em silencio.
-# A negacao vive aqui de proposito: o .gitignore da raiz pertence a outro dono.
+# O .gitignore da raiz DESTA branch ainda tem `data/` (o diretorio SQLite do app
+# Flask), e esse padrao casa com QUALQUER diretorio `data` — inclusive o pacote
+# Kotlin `me.zippert.dialoglite.data`. Sem a negacao abaixo, arquivo novo no
+# pacote some do commit em silencio (aconteceu com o CleartextPolicy.kt).
+#
+# A correcao de verdade esta na feat/monorepo, que ancora o padrao em
+# `server/data/`. DEPOIS DO MERGE estas duas linhas viram redundantes e podem
+# sair — ate la, elas sao a unica protecao nesta branch.
 !app/src/main/java/me/zippert/dialoglite/data/
 !app/src/main/java/me/zippert/dialoglite/data/**

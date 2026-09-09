@@ -19,6 +19,7 @@ import me.zippert.dialoglite.data.prefs.PreferencesSource
 import me.zippert.dialoglite.data.remote.ApiFactory
 import me.zippert.dialoglite.data.remote.BaseUrlInterceptor
 import me.zippert.dialoglite.data.remote.DiaLogApi
+import me.zippert.dialoglite.data.remote.InsecureBaseUrlException
 import me.zippert.dialoglite.data.remote.NoBaseUrlException
 import me.zippert.dialoglite.data.remote.dto.BulkRowDto
 import me.zippert.dialoglite.data.remote.dto.BulkUpdateRequest
@@ -151,6 +152,9 @@ class DayRepository(
             api.getHistory()
         } catch (e: NoBaseUrlException) {
             return SyncOutcome.NotConfigured
+        } catch (e: InsecureBaseUrlException) {
+            // Erro de configuracao, nao de rede: reagendar nao conserta.
+            return SyncOutcome.Failed(e.friendlyMessage())
         } catch (e: IOException) {
             return SyncOutcome.Unreachable(e.friendlyMessage())
         } catch (e: HttpException) {
@@ -167,6 +171,8 @@ class DayRepository(
         val rows = queue.map { it.toRow() }
         val response = try {
             api.bulkUpdate(BulkUpdateRequest(rows))
+        } catch (e: InsecureBaseUrlException) {
+            return SyncOutcome.Failed(e.friendlyMessage())
         } catch (e: IOException) {
             return SyncOutcome.Unreachable(e.friendlyMessage())
         } catch (e: HttpException) {

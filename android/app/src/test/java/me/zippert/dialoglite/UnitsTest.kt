@@ -2,6 +2,8 @@ package me.zippert.dialoglite
 
 import me.zippert.dialoglite.data.BulkErrorPolicy
 import me.zippert.dialoglite.data.remote.BaseUrlInterceptor
+import me.zippert.dialoglite.data.remote.BaseUrlValidation
+import me.zippert.dialoglite.data.remote.CleartextPolicy
 import me.zippert.dialoglite.util.TimeFormats
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -80,5 +82,89 @@ class BaseUrlParsingTest {
     @Test
     fun `vazio vira null`() {
         assertNull(BaseUrlInterceptor.parse("   "))
+    }
+}
+
+/**
+ * O `networkSecurityConfig` nao entende CIDR, entao o escopo real do cleartext
+ * e decidido aqui. Estes testes sao o que impede a regra de virar decorativa.
+ */
+class CleartextPolicyTest {
+
+    @Test
+    fun `IP da mesh netbird e privado`() {
+        // 100.70.0.0/16 mora dentro do CGNAT 100.64.0.0/10.
+        assertTrue(CleartextPolicy.isPrivateLiteral("100.70.139.105"))
+        assertTrue(CleartextPolicy.isPrivateLiteral("100.64.0.1"))
+        assertTrue(CleartextPolicy.isPrivateLiteral("100.127.255.254"))
+    }
+
+    @Test
+    fun `faixas privadas classicas e loopback`() {
+        assertTrue(CleartextPolicy.isPrivateLiteral("10.1.2.3"))
+        assertTrue(CleartextPolicy.isPrivateLiteral("192.168.11.5"))
+        assertTrue(CleartextPolicy.isPrivateLiteral("172.18.2.1"))
+        assertTrue(CleartextPolicy.isPrivateLiteral("127.0.0.1"))
+        assertTrue(CleartextPolicy.isPrivateLiteral("::1"))
+        assertTrue(CleartextPolicy.isPrivateLiteral("fd00::1"))
+    }
+
+    @Test
+    fun `IP publico e borda das faixas nao passam`() {
+        assertFalse(CleartextPolicy.isPrivateLiteral("8.8.8.8"))
+        assertFalse(CleartextPolicy.isPrivateLiteral("100.63.255.255")) // logo abaixo do CGNAT
+        assertFalse(CleartextPolicy.isPrivateLiteral("100.128.0.0"))    // logo acima
+        assertFalse(CleartextPolicy.isPrivateLiteral("172.32.0.1"))     // fora do /12
+        assertFalse(CleartextPolicy.isPrivateLiteral("11.0.0.1"))
+    }
+
+    @Test
+    fun `hostname nunca conta como literal privado`() {
+        // Mesmo que resolva pra IP privado: o DNS muda e a checagem viraria
+        // decorativa. Cleartext exige o literal.
+        assertFalse(CleartextPolicy.isPrivateLiteral("localhost"))
+        assertFalse(CleartextPolicy.isPrivateLiteral("ponto.exemplo"))
+    }
+}
+
+class BaseUrlValidationTest {
+
+    @Test
+    fun `https em nome de host e aceito sem alarde`() {
+        val v = BaseUrlInterceptor.validate("https://ponto.exemplo")
+        assertTrue(v is BaseUrlValidation.Valid)
+        assertFalse((v as BaseUrlValidation.Valid).cleartext)
+    }
+
+    @Test
+    fun `http em IP da mesh e aceito e marcado como cleartext`() {
+        val v = BaseUrlInterceptor.validate("http://100.70.139.105")
+        assertTrue(v is BaseUrlValidation.Valid)
+        assertTrue((v as BaseUrlValidation.Valid).cleartext)
+    }
+
+    @Test
+    fun `IP da mesh sem esquema assume http e passa`() {
+        val v = BaseUrlInterceptor.validate("100.70.139.105:8000")
+        assertTrue(v is BaseUrlValidation.Valid)
+        assertTrue((v as BaseUrlValidation.Valid).cleartext)
+    }
+
+    @Test
+    fun `http em nome de host e recusado`() {
+        val v = BaseUrlInterceptor.validate("http://ponto.exemplo")
+        assertTrue(v is BaseUrlValidation.CleartextNotAllowed)
+        assertEquals("ponto.exemplo", (v as BaseUrlValidation.CleartextNotAllowed).host)
+    }
+
+    @Test
+    fun `http em IP publico e recusado`() {
+        assertTrue(BaseUrlInterceptor.validate("http://8.8.8.8") is BaseUrlValidation.CleartextNotAllowed)
+    }
+
+    @Test
+    fun `vazio e lixo tem estados proprios`() {
+        assertTrue(BaseUrlInterceptor.validate("   ") is BaseUrlValidation.Empty)
+        assertTrue(BaseUrlInterceptor.validate("http://") is BaseUrlValidation.Malformed)
     }
 }

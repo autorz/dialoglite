@@ -16,8 +16,9 @@ barra de título. Aceita `host`, `host:porta` ou URL completa — sem esquema,
 assume `http://`.
 
 ```
-https://dialog.zippert.me      # via Caddy
-100.70.38.0:8000               # direto no IP netbird do ymir
+https://time.zippert.me        # instância atrás do Caddy, com TLS
+http://100.70.139.105          # instância na mesh, HTTP em claro
+100.70.139.105:8000            # sem esquema = http://
 ```
 
 **Não há endereço embutido no binário, e não há credencial de espécie alguma.**
@@ -28,6 +29,36 @@ release num repositório público, então nada de segredo pode morar aqui.
 
 Consequência prática: **fora da mesh o servidor fica inalcançável, e isso é
 estado normal** — não é erro. As edições ficam na fila e sobem sozinhas.
+
+### HTTP em claro: o que o app permite, e o trade-off
+
+Uma das instâncias é servida como `http://100.70.x.y` — IP da mesh, **sem TLS**,
+porque o tráfego já vai cifrado por dentro do WireGuard. A outra é `https://`.
+O app aceita as duas na mesma configuração.
+
+O Android bloqueia cleartext por padrão desde o 9, e o `networkSecurityConfig`
+casa por **hostname exato ou sufixo de domínio — não entende faixa CIDR**. Como
+o endereço é digitado em runtime, não há como declarar "cleartext só para
+`100.70.0.0/16`" em build time: são 65.536 endereços, nenhum conhecido na hora
+do build. As saídas declarativas seriam liberar cleartext geral ou proibir
+cleartext e inviabilizar a instância sem TLS.
+
+**Como ficou:** o XML libera o *transporte*, e quem estreita o *escopo* é
+`data/remote/CleartextPolicy.kt` — cleartext só para **literal de IP privado ou
+CGNAT** (10/8, 172.16/12, 192.168/16, **100.64/10**, 127/8, 169.254/16 e os
+equivalentes IPv6). `http://` para nome de host ou IP público é recusado na tela
+de configuração **e** no interceptor, antes de virar requisição. Hostname nunca
+conta como literal privado, mesmo que resolva para um IP privado — o DNS muda e
+a checagem viraria decorativa. Quando o endereço é cleartext, a tela de
+configuração mostra um aviso dizendo que a proteção vem só do túnel da mesh.
+
+**O trade-off, explícito:** a checagem é do app, não da plataforma. Código
+nativo ou uma biblioteca de terceiros que abrisse socket por fora do OkHttp não
+passaria por ela. Para este app — uma dependência de rede, sem SDK de terceiro —
+o risco é aceito conscientemente. Quando as duas instâncias tiverem TLS, a
+mudança é `cleartextTrafficPermitted=false` e apagar o `CleartextPolicy`.
+
+Os trust anchors são só os do sistema: CA instalada pelo usuário não é aceita.
 
 ---
 
@@ -45,6 +76,7 @@ estado normal** — não é erro. As edições ficam na fila e sobem sozinhas.
 | `data/remote` | Retrofit + kotlinx.serialization. `BaseUrlInterceptor` reescreve host/porta/esquema a cada chamada (a base é runtime, não build-time). |
 | `data/DayRepository` | Onde mora a sequência de sync e o tratamento das armadilhas do contrato. |
 | `sync/` | `SyncWorker` (CoroutineWorker) + agendamento: periódico a cada 6 h, mais disparo na abertura do app, no pull-to-refresh e ao salvar uma edição. |
+| `data/remote/CleartextPolicy` | Onde o escopo do HTTP sem TLS é decidido (ver seção acima). |
 | `ui/` | `DaysScreen` (lista), `DayEditSheet` (edição rápida), `SetupScreen` (URL base). |
 
 DI é manual (`AppContainer`): o grafo tem quatro objetos e um escopo só.
@@ -85,6 +117,15 @@ do dia novo falhar. O passo 3 traz saldo e deltas recalculados.
 
 A #4, a #5 e a #6 não estavam no levantamento inicial; saíram da leitura de
 `app/core.py` e `app/routes.py`.
+
+### Servidor inalcançável não é erro
+
+Fora da mesh — netbird desconectado, celular no 4G — o endpoint simplesmente não
+responde, e esse é o estado que **aciona** a fila offline. O app não trata isso
+com alarme e não fica martelando: o `SyncWorker` roda sob constraint de rede
+(`NetworkType.CONNECTED`), tenta 4 vezes com backoff exponencial (~8 min de
+janela) e para. Daí em diante quem cuida é o worker periódico de 6 h e a
+abertura do app. A fila fica intacta o tempo todo.
 
 ### Fila de edições
 
@@ -157,7 +198,7 @@ mexeria no MockWebServer dos testes sem ganho para o app).
 ./docker/build.sh testDebugUnitTest
 ```
 
-20 testes JVM, sem emulador. Os de `SyncSequenceTest` usam MockWebServer + um DAO
+31 testes JVM, sem emulador. Os de `SyncSequenceTest` usam MockWebServer + um DAO
 em memória e existem para travar exatamente as armadilhas da tabela acima —
 foram verificados **falhando** com o bug reintroduzido, não só passando.
 

@@ -10,6 +10,7 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
@@ -22,6 +23,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import me.zippert.dialoglite.data.remote.BaseUrlInterceptor
+import me.zippert.dialoglite.data.remote.BaseUrlValidation
 
 /**
  * O endereco base e digitado pelo usuario: sao duas instancias distintas
@@ -35,8 +37,8 @@ fun SetupScreen(
     modifier: Modifier = Modifier,
 ) {
     var value by remember(current) { mutableStateOf(current.orEmpty()) }
-    val parsed = remember(value) { BaseUrlInterceptor.parse(value) }
-    val valid = value.isNotBlank() && parsed != null
+    val validation = remember(value) { BaseUrlInterceptor.validate(value) }
+    val valid = validation is BaseUrlValidation.Valid
 
     Column(
         modifier = modifier
@@ -57,15 +59,19 @@ fun SetupScreen(
             value = value,
             onValueChange = { value = it },
             label = { Text("URL base") },
-            placeholder = { Text("https://dialog.zippert.me") },
+            placeholder = { Text("https://ponto.exemplo  ·  http://100.70.0.1") },
             singleLine = true,
-            isError = value.isNotBlank() && !valid,
+            isError = validation is BaseUrlValidation.Malformed ||
+                validation is BaseUrlValidation.CleartextNotAllowed,
             supportingText = {
                 Text(
-                    if (value.isNotBlank() && !valid) {
-                        "Endereço inválido."
-                    } else {
-                        "Aceita host, host:porta ou URL completa. Sem esquema, assume http://."
+                    when (validation) {
+                        is BaseUrlValidation.Malformed -> "Endereço inválido."
+                        is BaseUrlValidation.CleartextNotAllowed ->
+                            "\"${validation.host}\" não é um IP privado, então precisa ser https://."
+                        else ->
+                            "Aceita https://<host> ou http://<ip da mesh>[:porta]. " +
+                                "Sem esquema, assume http://."
                     }
                 )
             },
@@ -73,12 +79,33 @@ fun SetupScreen(
             modifier = Modifier.fillMaxWidth(),
         )
 
-        if (valid) {
+        (validation as? BaseUrlValidation.Valid)?.let { ok ->
+            if (ok.cleartext) {
+                // O usuario precisa saber que este endereco especifico nao tem
+                // TLS: a protecao vem so do tunel WireGuard da mesh.
+                Card(
+                    colors = CardDefaults.cardColors(
+                        containerColor = MaterialTheme.colorScheme.tertiaryContainer
+                    ),
+                    modifier = Modifier.fillMaxWidth(),
+                ) {
+                    Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                        Text("Sem TLS", style = MaterialTheme.typography.titleSmall)
+                        Text(
+                            "Este endereço usa HTTP em claro. O tráfego só fica protegido " +
+                                "por dentro do túnel da mesh netbird — em qualquer outra rede, " +
+                                "ele vai exposto.",
+                            style = MaterialTheme.typography.bodySmall,
+                        )
+                    }
+                }
+            }
+
             Card(modifier = Modifier.fillMaxWidth()) {
                 Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                     Text("Vai chamar:", style = MaterialTheme.typography.labelMedium)
-                    Text("${parsed}api/history", style = MaterialTheme.typography.bodySmall)
-                    Text("${parsed}day/bulk_update", style = MaterialTheme.typography.bodySmall)
+                    Text("${ok.url}api/history", style = MaterialTheme.typography.bodySmall)
+                    Text("${ok.url}day/bulk_update", style = MaterialTheme.typography.bodySmall)
                 }
             }
         }

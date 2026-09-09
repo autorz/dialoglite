@@ -43,7 +43,11 @@ class SyncSequenceTest {
         val interceptor = BaseUrlInterceptor()
         repository = DayRepository(
             dao = dao,
-            prefs = FakePreferences(server.url("/").toString()),
+            // Literal de loopback, nao `server.url("/")`: aquele devolve
+            // `http://localhost:...`, e a CleartextPolicy recusa NOME em
+            // cleartext de proposito. Aqui o endereco imita o de producao
+            // (IP literal na mesh).
+            prefs = FakePreferences("http://127.0.0.1:${server.port}/"),
             api = ApiFactory.create(interceptor),
             baseUrlInterceptor = interceptor,
         )
@@ -268,6 +272,30 @@ class SyncSequenceTest {
         repository.sync()
 
         assertEquals("nova", dao.pending.value.single().notes)
+    }
+
+    /**
+     * Defesa em profundidade: a tela de configuracao recusa cleartext pra nome
+     * de host, mas um valor gravado por versao antiga tem que morrer no
+     * interceptor tambem — antes de virar requisicao na rede.
+     */
+    @Test
+    fun `cleartext pra hostname morre no interceptor`() = runTest {
+        val interceptor = BaseUrlInterceptor()
+        val repo = DayRepository(
+            dao = FakeDao(),
+            prefs = FakePreferences("http://ponto.exemplo"),
+            api = ApiFactory.create(interceptor),
+            baseUrlInterceptor = interceptor,
+        )
+
+        val outcome = repo.sync()
+
+        assertTrue("esperava Failed, veio $outcome", outcome is SyncOutcome.Failed)
+        // Nao pode ser tratado como "inalcancavel": erro de configuracao nao
+        // melhora com retry.
+        assertFalse(outcome is SyncOutcome.Unreachable)
+        assertEquals(0, server.requestCount)
     }
 
     /** Edicoes sucessivas do mesmo dia colapsam numa linha so. */

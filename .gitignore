@@ -145,8 +145,11 @@ cython_debug/
 .DS_Store
 
 # Project specific
-server.log
-data/
+# Ancorado em server/: o padrão solto `data/` casava com QUALQUER diretório
+# chamado data em qualquer profundidade — inclusive o pacote Kotlin
+# me.zippert.dialoglite.data, que sumia do commit em silêncio.
+server/server.log
+server/data/
 
 # Signing material — NEVER commit a keystore to this public repo.
 # CI receives it as the ANDROID_KEYSTORE_BASE64 secret; see README.md.

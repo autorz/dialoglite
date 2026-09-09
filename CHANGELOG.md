@@ -31,6 +31,12 @@ projeto adota [Versionamento Semântico](https://semver.org/lang/pt-BR/).
   chave privada/token vazarem para dentro do pacote, e avisa sobre endereços
   internos. O repositório é público.
 
+### Corrigido
+- `.gitignore` da raiz: `data/` (o diretório SQLite do Flask) casava com
+  **qualquer** diretório chamado `data` em qualquer profundidade — o pacote
+  Kotlin `me.zippert.dialoglite.data` do cliente Android sumia do commit em
+  silêncio. Ancorado em `server/data/` (e `server/server.log`).
+
 ## [1.2.1] - 2026-09-08
 
 ### Alterado

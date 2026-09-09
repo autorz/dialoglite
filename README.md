@@ -41,6 +41,10 @@ runs on `release: published` (and manually via `workflow_dispatch`). It has two
 | `build-and-push` | Multi-arch image pushed to `ghcr.io/autorz/dialoglite` (tags: `X.Y.Z`, `X.Y`, `sha-…`, `latest`) | `./server` |
 | `build-android-apk` | `dialoglite-<tag>.apk` uploaded as an asset of the release | `./android` |
 
+The Android job runs `./gradlew testDebugUnitTest assembleRelease` on JDK 21,
+with `platforms;android-36` and `build-tools;36.0.0` installed explicitly
+rather than assumed from the runner image.
+
 Two properties are deliberate and should not be "simplified" away:
 
 - **The image job is the priority.** The container image is what runs in
@@ -75,6 +79,15 @@ Actions secrets**:
 > public, anyone can forge an update, and Google Play rejects it. A debug-signed
 > build can also never be upgraded in place to a properly signed one — Android
 > refuses an update whose signature changed, so users have to uninstall first.
+
+**The workflow is the single signing authority.** `app/build.gradle.kts` can
+sign by itself when it sees `DIALOGLITE_KEYSTORE*` in the environment, but CI
+deliberately does **not** export those: letting Gradle sign would create two
+signing paths and two possible output filenames. Gradle always emits
+`app-release-unsigned.apk`, and the workflow zipaligns and signs it with
+`apksigner`. One place to audit, and `apksigner` never has to re-sign an
+already-signed APK. (Building locally with those variables set still works —
+that path is just not what CI uses.)
 
 **No keystore is stored in this repository, and none should ever be committed**
 (`*.jks` / `*.keystore` are in [`.gitignore`](.gitignore)). Generate one

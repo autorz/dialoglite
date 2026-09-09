@@ -31,6 +31,13 @@ projeto adota [Versionamento Semântico](https://semver.org/lang/pt-BR/).
   chave privada/token vazarem para dentro do pacote, e avisa sobre endereços
   internos. O repositório é público.
 
+- Registro de padrões aceitos na varredura do APK
+  (`.github/apk-scan-accepted.txt`): endereço interno deliberado vira
+  `::notice::` com justificativa, quem aceitou e quando, em vez de um
+  `::warning::` que dispararia em todo release até virar ruído. Padrão
+  registrado que deixa de casar **reprova o job** — aceite órfão é a mesma
+  dívida silenciosa que o arquivo evita.
+
 ### Corrigido
 - `.gitignore` da raiz: `data/` (o diretório SQLite do Flask) casava com
   **qualquer** diretório chamado `data` em qualquer profundidade — o pacote

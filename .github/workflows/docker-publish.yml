@@ -329,13 +329,54 @@ jobs:
               fail=1
             fi
           done
-          # Endereços internos: aviso (podem ser falso-positivo de biblioteca),
-          # mas num APK público merecem olho humano.
-          for pattern in '100\.70\.[0-9]' '192\.168\.[0-9]' 'zippert\.me' 'netbird'; do
-            if grep -raqE -- "$pattern" "$work"; then
-              echo "::warning title=Endereço interno no APK::padrão '${pattern}' encontrado. Confirme que é intencional — o APK é público."
+          # --- endereços internos ------------------------------------------
+          # Detector fixo. Cada padrão encontrado vira `::notice::` com a
+          # justificativa se estiver registrado em .github/apk-scan-accepted.txt,
+          # e `::warning::` alto se não estiver. Aviso que dispara em todo
+          # release vira ruído — registrar é assumir a decisão por escrito.
+          watch=('100\.70\.[0-9]' '192\.168\.[0-9]' 'zippert\.me' 'netbird')
+
+          accept_file=".github/apk-scan-accepted.txt"
+          declare -A acc_who=() acc_when=() acc_why=()
+          # Trim sem `xargs`: xargs comeria as barras invertidas do regex.
+          trim() {
+            local v="$1"
+            v="${v#"${v%%[![:space:]]*}"}"
+            v="${v%"${v##*[![:space:]]}"}"
+            printf '%s' "$v"
+          }
+          if [ -f "$accept_file" ]; then
+            while IFS='|' read -r f_pat f_who f_when f_why || [ -n "${f_pat:-}" ]; do
+              f_pat="$(trim "${f_pat:-}")"
+              case "$f_pat" in ''|'#'*) continue ;; esac
+              if [ -z "${f_why:-}" ]; then
+                echo "::error title=Registro malformado::'${f_pat}' em ${accept_file} não tem os quatro campos (regex | quem | data | por quê)."
+                fail=1
+                continue
+              fi
+              acc_who["$f_pat"]="$(trim "$f_who")"
+              acc_when["$f_pat"]="$(trim "$f_when")"
+              acc_why["$f_pat"]="$(trim "$f_why")"
+            done < "$accept_file"
+          fi
+
+          # Padrão aceito que não casa com nada é dívida silenciosa: reprova.
+          for pat in "${!acc_who[@]}"; do
+            if ! grep -raqE -- "$pat" "$work"; then
+              echo "::error title=Padrão aceito órfão::'${pat}' está registrado em ${accept_file} mas não casa com nada no APK. A string saiu do app — remova a linha."
+              fail=1
             fi
           done
+
+          for pattern in "${watch[@]}"; do
+            grep -raqE -- "$pattern" "$work" || continue
+            if [ -n "${acc_who[$pattern]:-}" ]; then
+              echo "::notice title=Padrão interno aceito::'${pattern}' encontrado — aceito por ${acc_who[$pattern]} em ${acc_when[$pattern]}: ${acc_why[$pattern]}"
+            else
+              echo "::warning title=Endereço interno no APK::padrão '${pattern}' encontrado e NÃO registrado. Se for intencional, registre em ${accept_file} com justificativa; o APK é público."
+            fi
+          done
+
           rm -rf "$work"
           exit "$fail"
 

@@ -129,9 +129,27 @@ accordingly:
 - Passwords reach `apksigner` through `env:` references, never as command-line
   arguments or echoed values.
 - After building, a scan step greps the APK for the keystore password and for
-  private hostnames/addresses, and **fails the job** if it finds the password.
-  Do not put internal endpoints, tokens, or default credentials in the Android
-  sources — assume everything shipped in the APK is public.
+  private hostnames/addresses, and **fails the job** if it finds the password,
+  a private key, or a GitHub token. Do not put internal endpoints, tokens, or
+  default credentials in the Android sources — assume everything shipped in the
+  APK is public.
+
+### Accepted internal-address patterns
+
+Internal addresses (mesh IPs, LAN IPs, own hostnames) are a *warning*, not a
+failure — some are deliberate. But a warning that fires on every single release
+becomes noise, and then the `192.168.x` that shows up by accident six months
+from now scrolls past unnoticed.
+
+So deliberate ones get written down in
+[`.github/apk-scan-accepted.txt`](.github/apk-scan-accepted.txt) — pattern, who
+accepted it, when, and why. A match that is registered there prints a
+`::notice::` with the reason; anything unregistered still prints a loud
+`::warning::`.
+
+**A registered pattern that no longer matches anything fails the job.** An
+orphaned acceptance is the same silent debt the file exists to prevent: when the
+string leaves the app, its line has to leave with it.
 
 ## Repository layout
 

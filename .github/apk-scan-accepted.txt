@@ -1,0 +1,29 @@
+# Padrões de endereço interno ACEITOS dentro do APK publicado.
+#
+# O passo "Scan APK for leaked secrets" do workflow de release procura, dentro
+# do APK, padrões que num artefato PÚBLICO merecem olho humano (IPs da mesh,
+# IPs de LAN, hostnames próprios). Cada padrão encontrado vira:
+#
+#   - `::notice::` com a justificativa, se estiver registrado aqui;
+#   - `::warning::` alto, se não estiver.
+#
+# O ponto de existir este arquivo: um aviso que dispara em todo release vira
+# ruído, e aí o `192.168.x` que aparecer sem querer daqui a seis meses passa
+# batido no meio dele. Registrar é assumir a decisão por escrito, com nome e
+# data, em vez de aprender a ignorar o aviso.
+#
+# REGRA: padrão registrado aqui que NÃO casa com nada no APK REPROVA o job.
+# Padrão aceito órfão é dívida silenciosa igual à que este arquivo resolve —
+# quando a string sair do app, a linha tem que sair daqui junto.
+#
+# Formato, um por linha, quatro campos separados por `|`:
+#
+#   <regex ERE> | <quem aceitou> | <YYYY-MM-DD> | <por quê>
+#
+# O regex é o mesmo do detector (`grep -E`), então copie-o exatamente como
+# aparece no aviso — inclusive as barras invertidas.
+#
+# Linhas em branco e linhas começando com `#` são ignoradas.
+#
+# Exemplo (comentado; descomentar só quando for verdade):
+# 100\.70\.[0-9] | fulano | 2026-01-01 | Placeholder não-roteável na tela de setup.

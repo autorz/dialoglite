@@ -20,6 +20,17 @@ projeto adota [Versionamento Semântico](https://semver.org/lang/pt-BR/).
   imagem (`ghcr.io/autorz/dialoglite`) estão **inalterados** — os hosts em
   produção continuam puxando exatamente o mesmo artefato.
 
+### Adicionado
+- Job `build-android-apk` no workflow de release: constrói o APK de release a
+  partir de `android/`, assina (keystore via GitHub Secrets, com fallback
+  explícito para chave de debug) e anexa o `.apk` como asset do release. Roda
+  **em paralelo** ao job da imagem e é `continue-on-error` — o app web em
+  produção tem prioridade e nunca falha por causa do Android. Enquanto
+  `android/` não existir, o job passa em verde com um aviso.
+- Varredura do APK antes da publicação: falha o job se senha de keystore ou
+  chave privada/token vazarem para dentro do pacote, e avisa sobre endereços
+  internos. O repositório é público.
+
 ## [1.2.1] - 2026-09-08
 
 ### Alterado

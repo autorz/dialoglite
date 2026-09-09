@@ -147,3 +147,10 @@ cython_debug/
 # Project specific
 server.log
 data/
+
+# Signing material — NEVER commit a keystore to this public repo.
+# CI receives it as the ANDROID_KEYSTORE_BASE64 secret; see README.md.
+*.jks
+*.keystore
+*.jks.b64
+keystore.properties

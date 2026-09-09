@@ -1,4 +1,4 @@
-name: Docker Build and Publish
+name: Release artifacts (Docker image + Android APK)
 
 on:
   release:
@@ -9,8 +9,12 @@ env:
   REGISTRY: ghcr.io
   IMAGE_NAME: ${{ github.repository }}
 
+# Os dois jobs abaixo são INDEPENDENTES de propósito: o app web está em
+# produção e tem prioridade, então nada no caminho do APK pode reprovar (nem
+# atrasar) a publicação da imagem. Não adicione `needs:` entre eles.
 jobs:
   build-and-push:
+    name: Docker image (ghcr.io)
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -60,3 +64,261 @@ jobs:
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
+
+  build-android-apk:
+    name: Android APK
+    runs-on: ubuntu-latest
+    # Rede de segurança: mesmo que este job falhe, o run não é marcado como
+    # falho. A imagem em produção manda.
+    continue-on-error: true
+    permissions:
+      contents: write # necessário para anexar o APK ao release
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # Enquanto android/ não existir na ref, o job passa em verde com um
+      # aviso — não é falha, é ausência.
+      - name: Detect Android project
+        id: detect
+        run: |
+          set -euo pipefail
+          if [ "${{ hashFiles('android/**') }}" = "" ]; then
+            echo "present=false" >> "$GITHUB_OUTPUT"
+            echo "::notice title=APK skipped::android/ ainda não existe nesta ref. Nada a construir — isto não é uma falha."
+          else
+            echo "present=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Verify Gradle wrapper checksum
+        if: steps.detect.outputs.present == 'true'
+        uses: gradle/actions/wrapper-validation@v4
+
+      - name: Set up JDK 17
+        if: steps.detect.outputs.present == 'true'
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Set up Gradle
+        if: steps.detect.outputs.present == 'true'
+        uses: gradle/actions/setup-gradle@v4
+
+      # Decide entre assinar com a keystore de release (secrets configurados)
+      # ou com a chave de debug. Nada do valor do secret é impresso: só o
+      # comprimento zero / não-zero decide o caminho.
+      - name: Resolve signing mode and release tag
+        id: prep
+        if: steps.detect.outputs.present == 'true'
+        env:
+          KEYSTORE_B64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          RELEASE_TAG: ${{ github.event.release.tag_name }}
+        run: |
+          set -euo pipefail
+          if [ -n "${KEYSTORE_B64:-}" ]; then
+            echo "mode=release" >> "$GITHUB_OUTPUT"
+          else
+            echo "mode=debug" >> "$GITHUB_OUTPUT"
+            echo "::warning title=APK assinado em DEBUG::Os secrets ANDROID_KEYSTORE_BASE64/PASSWORD/KEY_ALIAS/KEY_PASSWORD não estão configurados. O APK será assinado com a chave de debug do Android, que é pública: serve para sideload/teste e NÃO para distribuição. Um build debug-signed também não pode ser atualizado no lugar por um build assinado de verdade (o Android recusa troca de assinatura). Veja a seção 'Signing the APK' no README."
+          fi
+          tag="${RELEASE_TAG:-}"
+          if [ -z "$tag" ]; then
+            tag="dispatch-${GITHUB_SHA:0:7}"
+          fi
+          echo "tag=${tag}" >> "$GITHUB_OUTPUT"
+
+      - name: Assemble release APK
+        if: steps.detect.outputs.present == 'true'
+        working-directory: android
+        env:
+          # Contrato opcional com o módulo Android: se o build.gradle definir
+          # um signingConfig lendo estas variáveis, ele já sai assinado. Se
+          # não definir, o passo seguinte assina o APK de qualquer forma — por
+          # isso o workflow não depende de como o Gradle está configurado.
+          ANDROID_KEYSTORE_PATH: ${{ runner.temp }}/release.jks
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: |
+          set -euo pipefail
+          if [ ! -x ./gradlew ]; then
+            if [ -f ./gradlew ]; then
+              chmod +x ./gradlew
+            else
+              echo "::error title=Gradle wrapper ausente::android/ existe mas não tem ./gradlew — não dá para construir o APK."
+              exit 1
+            fi
+          fi
+          ./gradlew assembleRelease --no-daemon --stacktrace
+
+      - name: Sign and align APK
+        id: sign
+        if: steps.detect.outputs.present == 'true'
+        env:
+          SIGN_MODE: ${{ steps.prep.outputs.mode }}
+          TAG: ${{ steps.prep.outputs.tag }}
+          KEYSTORE_B64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          KS_PASS: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          KEY_PASS: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: |
+          set -euo pipefail
+
+          # --- localizar o APK produzido pelo Gradle -----------------------
+          mapfile -t apks < <(find android -type f -path '*/build/outputs/apk/release/*.apk' | sort)
+          if [ "${#apks[@]}" -eq 0 ]; then
+            echo "::error title=Nenhum APK::assembleRelease não produziu APK em */build/outputs/apk/release/."
+            exit 1
+          fi
+          if [ "${#apks[@]}" -gt 1 ]; then
+            printf '::warning title=Mais de um APK::%s\n' "${apks[*]}"
+          fi
+          raw="${apks[0]}"
+          echo "APK bruto: ${raw}"
+
+          # --- build-tools (zipalign/apksigner) ----------------------------
+          sdk="${ANDROID_HOME:-${ANDROID_SDK_ROOT:-}}"
+          if [ -z "$sdk" ]; then
+            echo "::error title=SDK ausente::ANDROID_HOME/ANDROID_SDK_ROOT não definidos no runner."
+            exit 1
+          fi
+          mapfile -t bts < <(find "$sdk/build-tools" -mindepth 1 -maxdepth 1 -type d 2>/dev/null | sort -V)
+          if [ "${#bts[@]}" -eq 0 ]; then
+            # Aceite de licença por arquivo, NÃO por `yes | sdkmanager`: com
+            # `set -o pipefail`, o `yes` morre de SIGPIPE quando o sdkmanager
+            # termina e o pipeline devolve 141, abortando o job por engano.
+            printf 'y\n%.0s' $(seq 1 100) > "${RUNNER_TEMP}/sdk-accept.txt"
+            "$sdk/cmdline-tools/latest/bin/sdkmanager" "build-tools;35.0.0" \
+              < "${RUNNER_TEMP}/sdk-accept.txt" > /dev/null
+            rm -f "${RUNNER_TEMP}/sdk-accept.txt"
+            mapfile -t bts < <(find "$sdk/build-tools" -mindepth 1 -maxdepth 1 -type d | sort -V)
+          fi
+          if [ "${#bts[@]}" -eq 0 ]; then
+            echo "::error title=build-tools ausente::Não há build-tools em ${sdk} e o sdkmanager não instalou. Sem zipalign/apksigner não dá para assinar."
+            exit 1
+          fi
+          bt="${bts[$(( ${#bts[@]} - 1 ))]}"
+          echo "build-tools: ${bt}"
+
+          # --- keystore ----------------------------------------------------
+          # Fica em RUNNER_TEMP, FORA do checkout: não pode ser varrido para
+          # dentro do APK como recurso nem acabar num commit.
+          ks="${RUNNER_TEMP}/release.jks"
+          if [ "$SIGN_MODE" = "release" ]; then
+            printf '%s' "$KEYSTORE_B64" | base64 -d > "$ks"
+            export SIGN_KS_PASS="$KS_PASS"
+            export SIGN_KEY_PASS="${KEY_PASS:-$KS_PASS}"
+            alias_name="${KEY_ALIAS:-}"
+            suffix=""
+          else
+            ks="${HOME}/.android/debug.keystore"
+            if [ ! -f "$ks" ]; then
+              mkdir -p "${HOME}/.android"
+              keytool -genkeypair -v -keystore "$ks" \
+                -storepass android -keypass android \
+                -alias androiddebugkey -dname 'CN=Android Debug,O=Android,C=US' \
+                -keyalg RSA -keysize 2048 -validity 10000 >/dev/null
+            fi
+            export SIGN_KS_PASS="android"
+            export SIGN_KEY_PASS="android"
+            alias_name="androiddebugkey"
+            suffix="-debug-signed"
+          fi
+
+          # --- zipalign ANTES de assinar (v2/v3 exigem alinhamento) --------
+          out_dir="${RUNNER_TEMP}/apk-out"
+          mkdir -p "$out_dir"
+          final="${out_dir}/dialoglite-${TAG}${suffix}.apk"
+          "${bt}/zipalign" -p -f 4 "$raw" "${out_dir}/aligned.apk"
+
+          # Senhas entram por referência de ambiente (env:VAR): nunca como
+          # argumento de linha de comando, que apareceria em `ps` e em logs.
+          # O alias é opcional: se ANDROID_KEY_ALIAS não estiver configurado e a
+          # keystore tiver uma única entrada, o apksigner a escolhe sozinho.
+          # Melhor isso do que reprovar o release por um secret esquecido.
+          alias_args=()
+          if [ -n "$alias_name" ]; then
+            alias_args=(--ks-key-alias "$alias_name")
+          fi
+          "${bt}/apksigner" sign \
+            --ks "$ks" \
+            "${alias_args[@]}" \
+            --ks-pass env:SIGN_KS_PASS \
+            --key-pass env:SIGN_KEY_PASS \
+            --out "$final" \
+            "${out_dir}/aligned.apk"
+          "${bt}/apksigner" verify --print-certs "$final"
+
+          rm -f "${out_dir}/aligned.apk"
+          echo "apk=${final}" >> "$GITHUB_OUTPUT"
+          echo "name=$(basename "$final")" >> "$GITHUB_OUTPUT"
+
+      # O APK vai para um release de repositório PÚBLICO. Este passo é a
+      # última barreira: falha duro se material de segredo tiver vazado para
+      # dentro do pacote, e avisa sobre endereços internos.
+      - name: Scan APK for leaked secrets
+        if: steps.detect.outputs.present == 'true'
+        env:
+          APK: ${{ steps.sign.outputs.apk }}
+          KS_PASS: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          KEY_PASS: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: |
+          set -euo pipefail
+          work="${RUNNER_TEMP}/apk-scan"
+          rm -rf "$work" && mkdir -p "$work"
+          unzip -qo "$APK" -d "$work"
+
+          fail=0
+          # Segredos: falha. `grep -q` não imprime o que casou.
+          for secret in "${KS_PASS:-}" "${KEY_PASS:-}"; do
+            if [ -n "$secret" ] && [ "${#secret}" -ge 6 ] \
+               && grep -raqF -- "$secret" "$work"; then
+              echo "::error title=Segredo no APK::A senha da keystore aparece dentro do APK. Publicação abortada."
+              fail=1
+            fi
+          done
+          for pattern in 'BEGIN [A-Z ]*PRIVATE KEY' 'ghp_[A-Za-z0-9]{36}' 'github_pat_[A-Za-z0-9_]{20,}'; do
+            if grep -raqE -- "$pattern" "$work"; then
+              echo "::error title=Credencial no APK::padrão '${pattern}' encontrado dentro do APK. Publicação abortada."
+              fail=1
+            fi
+          done
+          # Endereços internos: aviso (podem ser falso-positivo de biblioteca),
+          # mas num APK público merecem olho humano.
+          for pattern in '100\.70\.[0-9]' '192\.168\.[0-9]' 'zippert\.me' 'netbird'; do
+            if grep -raqE -- "$pattern" "$work"; then
+              echo "::warning title=Endereço interno no APK::padrão '${pattern}' encontrado. Confirme que é intencional — o APK é público."
+            fi
+          done
+          rm -rf "$work"
+          exit "$fail"
+
+      - name: Upload APK as workflow artifact
+        if: steps.detect.outputs.present == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ steps.sign.outputs.name }}
+          path: ${{ steps.sign.outputs.apk }}
+          if-no-files-found: error
+
+      - name: Attach APK to the release
+        if: steps.detect.outputs.present == 'true' && github.event_name == 'release'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG: ${{ github.event.release.tag_name }}
+          APK: ${{ steps.sign.outputs.apk }}
+        run: |
+          set -euo pipefail
+          gh release upload "$TAG" "$APK" --clobber
+
+      # A keystore decodificada não pode sobreviver ao job nem em caso de erro.
+      - name: Shred decoded keystore
+        if: always()
+        run: |
+          set -euo pipefail
+          ks="${RUNNER_TEMP}/release.jks"
+          if [ -f "$ks" ]; then
+            shred -u "$ks" || rm -f "$ks"
+          fi

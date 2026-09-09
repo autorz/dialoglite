@@ -1,5 +1,6 @@
 package me.zippert.dialoglite
 
+import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.json.Json
@@ -12,6 +13,7 @@ import me.zippert.dialoglite.data.SyncOutcome
 import me.zippert.dialoglite.data.local.PeriodValue
 import me.zippert.dialoglite.data.remote.ApiFactory
 import me.zippert.dialoglite.data.remote.BaseUrlInterceptor
+import okhttp3.mockwebserver.Dispatcher
 import okhttp3.mockwebserver.MockResponse
 import okhttp3.mockwebserver.MockWebServer
 import okhttp3.mockwebserver.RecordedRequest
@@ -238,6 +240,34 @@ class SyncSequenceTest {
         assertTrue(outcome is SyncOutcome.Unreachable)
         assertEquals(1, dao.pending.value.size)
         assertEquals(0, dao.pending.value.single().attempts)
+    }
+
+    /**
+     * Corrida: o usuario salva de novo o mesmo dia enquanto o POST esta no ar.
+     * A resposta OK e da edicao ANTIGA — apagar cego perderia a nova, que nunca
+     * foi enviada. A pendencia tem que sobreviver.
+     *
+     * A segunda edicao entra de dentro do dispatcher do MockWebServer, no exato
+     * instante em que o bulk_update chega: deterministico, sem sleep.
+     */
+    @Test
+    fun `edicao salva durante o envio nao e apagada pela resposta`() = runTest {
+        repository.queueEdit("2026-09-08", notes = "antiga", periods = null)
+
+        server.dispatcher = object : Dispatcher() {
+            override fun dispatch(request: RecordedRequest): MockResponse = when (request.path) {
+                "/day/bulk_update" -> {
+                    runBlocking { repository.queueEdit("2026-09-08", notes = "nova", periods = null) }
+                    MockResponse().setResponseCode(200)
+                        .setBody("""{"status":"ok","updated":1,"errors":[]}""")
+                }
+                else -> MockResponse().setResponseCode(200).setBody(historyBody())
+            }
+        }
+
+        repository.sync()
+
+        assertEquals("nova", dao.pending.value.single().notes)
     }
 
     /** Edicoes sucessivas do mesmo dia colapsam numa linha so. */

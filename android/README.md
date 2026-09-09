@@ -81,6 +81,7 @@ do dia novo falhar. O passo 3 traz saldo e deltas recalculados.
 | 5 | `entries: []` **APAGA** os períodos do dia | "Não editei isso" omite o campo do payload (`explicitNulls = false`), nunca manda lista vazia. Idem `notes`. |
 | 6 | O servidor faz `zip(entries, exits)` e **trunca pelo menor** | As duas listas sempre saem com o mesmo tamanho; período em aberto vai com `exit` nulo. |
 | 7 | Dia com **mais de 2 períodos** é recusado ("use edição avançada") | O app nem oferece o formulário nesse caso — enviar 2 períodos apagaria os demais. Mostra os períodos em leitura e manda usar a web. |
+| 8 | Edição salva **enquanto o POST está no ar** | A resposta OK é da edição antiga. Delete e marcação de falha são condicionados ao `updatedAt` lido antes do envio, senão a edição nova (nunca enviada) sumiria. |
 
 A #4, a #5 e a #6 não estavam no levantamento inicial; saíram da leitura de
 `app/core.py` e `app/routes.py`.
@@ -156,7 +157,7 @@ mexeria no MockWebServer dos testes sem ganho para o app).
 ./docker/build.sh testDebugUnitTest
 ```
 
-19 testes JVM, sem emulador. Os de `SyncSequenceTest` usam MockWebServer + um DAO
+20 testes JVM, sem emulador. Os de `SyncSequenceTest` usam MockWebServer + um DAO
 em memória e existem para travar exatamente as armadilhas da tabela acima —
 foram verificados **falhando** com o bug reintroduzido, não só passando.
 

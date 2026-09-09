@@ -185,13 +185,17 @@ class DayRepository(
         var pushed = 0
         for (edit in queue) {
             val error = errorsByDate[edit.date]
+            // `updatedAt` e o guarda contra a corrida: se o usuario salvou de
+            // novo o mesmo dia enquanto o POST estava no ar, a linha mudou e
+            // nem o delete nem a marcacao de falha a alcancam.
             if (error == null) {
-                dao.deletePending(edit.date)
+                dao.deletePendingIfUnchanged(edit.date, edit.updatedAt)
                 pushed++
             } else {
                 val attempts = edit.attempts + 1
                 dao.markPendingFailure(
                     date = edit.date,
+                    updatedAt = edit.updatedAt,
                     attempts = attempts,
                     error = error,
                     blocked = BulkErrorPolicy.isPermanent(error) || attempts >= MAX_ATTEMPTS,

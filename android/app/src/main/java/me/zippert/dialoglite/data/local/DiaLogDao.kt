@@ -43,11 +43,29 @@ interface DiaLogDao {
     @Query("DELETE FROM pending_edits WHERE date = :date")
     suspend fun deletePending(date: String)
 
+    /**
+     * Remove a pendencia so se ela nao mudou desde que foi lida.
+     *
+     * O envio e a resposta do servidor levam tempo, e nesse meio o usuario pode
+     * salvar OUTRA edicao do mesmo dia. Apagar cego perderia essa edicao nova,
+     * que nunca chegou a ser enviada. [updatedAt] e o carimbo lido antes do POST.
+     */
+    @Query("DELETE FROM pending_edits WHERE date = :date AND updatedAt = :updatedAt")
+    suspend fun deletePendingIfUnchanged(date: String, updatedAt: Long)
+
     @Query("DELETE FROM days WHERE date NOT IN (:keep)")
     suspend fun deleteDaysNotIn(keep: List<String>)
 
-    @Query("UPDATE pending_edits SET attempts = :attempts, lastError = :error, blocked = :blocked WHERE date = :date")
-    suspend fun markPendingFailure(date: String, attempts: Int, error: String?, blocked: Boolean)
+    /**
+     * Mesmo cuidado do delete: uma edicao salva durante o envio zera attempts e
+     * blocked de proposito (o usuario pode ter corrigido justamente o que o
+     * servidor recusou), e nao pode receber o resultado da rodada antiga.
+     */
+    @Query(
+        "UPDATE pending_edits SET attempts = :attempts, lastError = :error, blocked = :blocked " +
+            "WHERE date = :date AND updatedAt = :updatedAt"
+    )
+    suspend fun markPendingFailure(date: String, updatedAt: Long, attempts: Int, error: String?, blocked: Boolean)
 
     /**
      * Substitui o cache pelo que o servidor devolveu. A fila de pendencias fica

@@ -46,9 +46,23 @@ class FakeDao : DiaLogDao {
         days.value = days.value.filter { it.date in keep }
     }
 
-    override suspend fun markPendingFailure(date: String, attempts: Int, error: String?, blocked: Boolean) {
+    override suspend fun deletePendingIfUnchanged(date: String, updatedAt: Long) {
+        pending.value = pending.value.filterNot { it.date == date && it.updatedAt == updatedAt }
+    }
+
+    override suspend fun markPendingFailure(
+        date: String,
+        updatedAt: Long,
+        attempts: Int,
+        error: String?,
+        blocked: Boolean,
+    ) {
         pending.value = pending.value.map {
-            if (it.date == date) it.copy(attempts = attempts, lastError = error, blocked = blocked) else it
+            if (it.date == date && it.updatedAt == updatedAt) {
+                it.copy(attempts = attempts, lastError = error, blocked = blocked)
+            } else {
+                it
+            }
         }
     }
 }

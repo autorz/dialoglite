@@ -147,9 +147,40 @@ accepted it, when, and why. A match that is registered there prints a
 `::notice::` with the reason; anything unregistered still prints a loud
 `::warning::`.
 
+Acceptance is **per value, not per detector pattern**. Registering the whole
+`100.70.x` detector would silently green-light any address in that range,
+including a real one — the opposite of the point. Each legitimate value is
+registered on its own and compared as a whole string, so a registration never
+covers an address that merely has it as a prefix.
+
 **A registered pattern that no longer matches anything fails the job.** An
 orphaned acceptance is the same silent debt the file exists to prevent: when the
 string leaves the app, its line has to leave with it.
+
+## Repo exposure scan
+
+[`.github/workflows/tree-scan.yml`](.github/workflows/tree-scan.yml) runs on
+every pull request (and on direct pushes to `main`) and scans the **tree** —
+READMEs, tests, comments, compose files, workflows — for infrastructure that
+should not be readable in a public repository: private and mesh IP addresses,
+own hostnames, fleet machine names, non-standard SSH ports, host paths.
+
+It exists because the APK scan only looks at the published artifact, and it
+passed — correctly — on two occasions when a real infrastructure address was
+sitting in the repository, in a README and in a test. A clean artifact and an
+exposed repo are different things.
+
+Unlike the APK scan, an unregistered match here **fails the check**. On a pull
+request the decision is cheap; once pushed to a public repo, a string does not
+leave the history without a coordinated rewrite. Deliberate values go in
+[`.github/tree-scan-accepted.txt`](.github/tree-scan-accepted.txt), same format
+and same orphan rule.
+
+The detector patterns live in a separate file,
+[`.github/tree-scan-patterns.txt`](.github/tree-scan-patterns.txt), rather than
+inside the workflow. That is not tidiness: the machine-name list is literal, so
+a detector written inline would match itself and fail forever. Those two data
+files are the only ones excluded from the scan — review them with that in mind.
 
 ## Repository layout
 

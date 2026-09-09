@@ -1,0 +1,117 @@
+name: Repo exposure scan
+
+# Roda em PR (e em push direto para main, que não passa por PR): o objetivo é
+# descobrir exposição ANTES de ela existir num repositório público. Depois de
+# empurrada, uma string não sai do histórico sem reescrita coordenada.
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  exposure:
+    name: Infra exposure in the tree
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # Complementa a varredura do APK, que olha só o artefato publicado. Aqui
+      # o alvo é a ÁRVORE: README, testes, comentários, compose, workflows —
+      # tudo que fica legível para qualquer um que abra o repositório.
+      - name: Scan tree for infra exposure
+        run: |
+          set -euo pipefail
+
+          accept_file=".github/tree-scan-accepted.txt"
+          pattern_file=".github/tree-scan-patterns.txt"
+
+          # O detector mora num arquivo à parte por AUTO-REFERÊNCIA: a lista de
+          # nomes de host é literal, e escrita aqui dentro casaria consigo mesma,
+          # reprovando o job para sempre. Ver o cabeçalho do arquivo.
+          if [ ! -f "$pattern_file" ]; then
+            echo "::error title=Detector ausente::${pattern_file} não existe — sem ele a varredura não protege nada."
+            exit 1
+          fi
+          mapfile -t watch < <(grep -vE '^\s*(#|$)' "$pattern_file")
+          if [ "${#watch[@]}" -eq 0 ]; then
+            echo "::error title=Detector vazio::${pattern_file} não tem nenhum padrão."
+            exit 1
+          fi
+          echo "Padrões carregados: ${#watch[@]}"
+
+          # Só arquivos rastreados. Exclusões: o lockfile e os assets minificados
+          # de terceiros (ruído que não é nosso), e os dois arquivos de dados da
+          # própria varredura, cuja razão de existir é conter estes padrões.
+          mapfile -t files < <(git ls-files -- . \
+            ':!server/uv.lock' ':!server/app/static' \
+            ":!${accept_file}" ":!${pattern_file}")
+          echo "Arquivos varridos: ${#files[@]}"
+
+          fail=0
+          declare -A acc_who=() acc_when=() acc_why=() acc_used=()
+          trim() {
+            local v="$1"
+            v="${v#"${v%%[![:space:]]*}"}"
+            v="${v%"${v##*[![:space:]]}"}"
+            printf '%s' "$v"
+          }
+          if [ -f "$accept_file" ]; then
+            while IFS='|' read -r f_pat f_who f_when f_why || [ -n "${f_pat:-}" ]; do
+              f_pat="$(trim "${f_pat:-}")"
+              case "$f_pat" in ''|'#'*) continue ;; esac
+              if [ -z "${f_why:-}" ]; then
+                echo "::error title=Registro malformado::'${f_pat}' em ${accept_file} não tem os quatro campos (regex | quem | data | por quê)."
+                fail=1
+                continue
+              fi
+              acc_who["$f_pat"]="$(trim "$f_who")"
+              acc_when["$f_pat"]="$(trim "$f_when")"
+              acc_why["$f_pat"]="$(trim "$f_why")"
+            done < "$accept_file"
+          fi
+
+          # A aceitação é POR VALOR ENCONTRADO, não por padrão do detector.
+          # Aceitar o detector inteiro (`100\.70\....`) passaria a liberar em
+          # silêncio QUALQUER endereço daquela faixa — inclusive um real, que é
+          # exatamente o que esta varredura existe para pegar. Por isso cada
+          # valor legítimo é registrado individualmente, e a comparação é de
+          # string inteira (`grep -x`): um registro NÃO cobre um endereço que
+          # apenas o tenha como prefixo.
+          for pattern in "${watch[@]}"; do
+            mapfile -t found < <(grep -rhoaE -- "$pattern" "${files[@]}" 2>/dev/null | sort -u)
+            [ "${#found[@]}" -gt 0 ] || continue
+            for s in "${found[@]}"; do
+              hit=""
+              for pat in "${!acc_who[@]}"; do
+                if printf '%s\n' "$s" | grep -qxE -- "$pat"; then hit="$pat"; break; fi
+              done
+              if [ -n "$hit" ]; then
+                acc_used["$hit"]=1
+                echo "::notice title=Exposição aceita::'${s}' — aceito por ${acc_who[$hit]} em ${acc_when[$hit]}: ${acc_why[$hit]}"
+                continue
+              fi
+              fail=1
+              echo "::error title=Exposição não registrada::'${s}' encontrado na árvore e NÃO registrado. Este repositório é público: genericize (ex.: \`SEU-SERVIDOR\`, domínio \`.invalid\` da RFC 2606) ou registre em ${accept_file} com justificativa."
+              grep -nHaF -- "$s" "${files[@]}" 2>/dev/null | while IFS=: read -r f l _; do
+                echo "::error file=${f},line=${l}::'${s}' aqui."
+              done
+            done
+          done
+
+          # Aceite que não cobriu nada é dívida silenciosa: reprova.
+          for pat in "${!acc_who[@]}"; do
+            if [ -z "${acc_used[$pat]:-}" ]; then
+              echo "::error title=Padrão aceito órfão::'${pat}' está registrado em ${accept_file} mas não cobriu nenhuma ocorrência na árvore. A string saiu — remova a linha."
+              fail=1
+            fi
+          done
+
+          if [ "$fail" -eq 0 ]; then
+            echo "Árvore limpa: nenhuma exposição de infraestrutura não registrada."
+          fi
+          exit "$fail"

@@ -1,0 +1,51 @@
+# Padrões de exposição ACEITOS na ÁRVORE do repositório.
+#
+# Irmão de `apk-scan-accepted.txt`, e deliberadamente uma lista SEPARADA: o que
+# é aceitável num README ou num teste não é o mesmo que é aceitável dentro de um
+# binário distribuído. Um exemplo em documentação é lido por humanos; uma string
+# no dex viaja para o aparelho de todo mundo.
+#
+# Por que esta varredura existe: a varredura do APK olha só o artefato, e passou
+# limpa — corretamente — em duas ocasiões nas quais um endereço real de infra
+# estava publicado no repositório, em README e em teste. Artefato limpo e repo
+# exposto são coisas diferentes, e este repositório é PÚBLICO.
+#
+# Casou e está registrado aqui: `::notice::` com a justificativa.
+# Casou e NÃO está: `::error::` e o job REPROVA. Diferente da varredura do APK,
+# que só avisa: aqui a decisão é barata (é um PR, não um release) e o custo de
+# descobrir tarde é alto — uma vez empurrado para um repo público, o histórico
+# não volta atrás sem reescrita coordenada.
+#
+# REGRA: padrão registrado que NÃO casa com nada também REPROVA. Aceite órfão é
+# dívida silenciosa — quando a string sai da árvore, a linha sai junto.
+#
+# ---------------------------------------------------------------------------
+# CALIBRAGEM — LEIA ANTES DE "CONSERTAR" UM PADRÃO
+#
+# 1. O padrão do domínio é `zippert\.me`, com o ponto escapado, e NÃO a palavra
+#    `zippert` sozinha. Isso é deliberado: o applicationId do app Android é
+#    `me.zippert.dialoglite`, então a palavra aparece em todo descritor de
+#    classe e em todo caminho de arquivo do módulo — dezenas de vezes na árvore
+#    e no dex. Nome de pacote não é topologia, e não sai sem renomear o pacote
+#    inteiro. Trocar o padrão para `zippert` transforma esta varredura em ruído
+#    permanente, que é exatamente o que ela existe para evitar.
+#
+# 2. Os padrões de IP exigem os QUATRO octetos, não o prefixo. `192\.168\.` sem
+#    o resto casaria com prosa explicando a própria varredura ("o `192.168.x`
+#    que aparecer sem querer"), e a documentação do mecanismo acabaria
+#    reprovando o mecanismo.
+# ---------------------------------------------------------------------------
+#
+# Formato, um por linha, quatro campos separados por `|`:
+#
+#   <regex ERE> | <quem aceitou> | <YYYY-MM-DD> | <por quê>
+#
+# Linhas em branco e linhas começando com `#` são ignoradas.
+
+
+100\.70\.0\.0 | monorepo-ci | 2026-09-09 | Base da faixa CGNAT citada como `/16` no comentário da política de cleartext. É a definição do intervalo, não um host.
+100\.70\.0\.10 | team-lead | 2026-09-09 | Literal fictício de placeholder do campo de URL na tela de setup, e o valor usado nos testes que exercitam esse formato. Não é peer de ninguém.
+172\.16\.0\.0 | monorepo-ci | 2026-09-09 | Base da faixa privada RFC 1918 citada como `/12` no comentário da política de cleartext.
+172\.16\.0\.1 | monorepo-ci | 2026-09-09 | Fixture de teste da política de cleartext: primeiro endereço da faixa RFC 1918.
+192\.168\.0\.0 | monorepo-ci | 2026-09-09 | Base da faixa privada RFC 1918 citada como `/16` no comentário da política de cleartext.
+192\.168\.1\.20 | monorepo-ci | 2026-09-09 | Fixture de teste da política de cleartext: LAN doméstica genérica, não é endereço de host real.

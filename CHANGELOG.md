@@ -41,7 +41,19 @@ projeto adota [Versionamento Semântico](https://semver.org/lang/pt-BR/).
 - **Cliente Android** em `android/`, publicado como asset de release. Ver
   [`android/README.md`](android/README.md).
 
+- **Varredura de exposição da árvore** (`.github/workflows/tree-scan.yml`), em
+  PR e em push para `main`: procura IP privado/de mesh, hostname próprio, nome
+  de máquina da frota, porta SSH não-padrão e caminho de host em README, teste,
+  comentário, compose e workflow. Complementa a varredura do APK, que olha só o
+  artefato — repositório exposto e artefato limpo são coisas diferentes, e este
+  repositório é público. Match não registrado **reprova** o check.
+
 ### Corrigido
+- Aceitação nas duas varreduras passa a ser **por valor encontrado**, não por
+  padrão do detector. Aceitar o padrão inteiro liberaria em silêncio qualquer
+  endereço da faixa, inclusive um real — o oposto do objetivo. A comparação é
+  de string inteira, então um registro não cobre um endereço que apenas o tenha
+  como prefixo.
 - `.gitignore` da raiz: `data/` (o diretório SQLite do Flask) casava com
   **qualquer** diretório chamado `data` em qualquer profundidade — o pacote
   Kotlin `me.zippert.dialoglite.data` do cliente Android sumia do commit em
